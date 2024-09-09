@@ -84,12 +84,17 @@ logging.getLogger("pyrogram.session.session").setLevel(logging.ERROR)
 
 
 def setup_log_handlers():
-    file_handler = logging.FileHandler(
-        "ultlogs.txt",
+    kwargs = dict(
+        filename="ultlogs.txt",
         mode="w",
         encoding="utf-8",
         errors="ignore",
     )
+    if int(python_version_tuple()[1]) < 9:
+        # unsupported on python 3.8 or lower
+        kwargs.pop("errors", None)
+
+    file_handler = logging.FileHandler(**kwargs)
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(default_formatter)
 

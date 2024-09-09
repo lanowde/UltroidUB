@@ -219,11 +219,12 @@ async def _updater(
     if to_update:
         out, err = await bash("git reset --hard ; git pull --rebase")
         # await bash("cd addons && git reset --hard; git pull --rebase")
-        LOGS.info(f"Restarting:  {out} , {err}")
+        LOGS.info(f"Restarting: {out} | {err}")
     if task:
         await task
 
-    udB.set_key("_RESTART", f"{who}_{ult.chat_id}_{ok.id}")
+    who = "bot" if event.client._bot else "user"
+    udB.set_key("_RESTART", f"{who}_{event.chat_id}_{event.id}")
     return await restart(ult=event, edit=to_edit)
 
 
@@ -233,7 +234,6 @@ async def _updater(
 )
 async def restartbt(ult):
     ok = await ult.eor(get_string("bot_5"))
-    who = "bot" if ult.client._bot else "user"
     await _updater(
         ok, to_edit=True, task=asyncio.sleep(6), to_update=ult.pattern_match.group(1)
     )

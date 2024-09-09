@@ -94,7 +94,7 @@ async def remove_profilepic(delpfp):
     group = delpfp.pattern_match.group(2)
     if group == "all":
         lim = 0
-    elif group.isdigit():
+    elif group and group.isdigit():
         lim = int(group)
     else:
         lim = 1
@@ -115,12 +115,12 @@ async def gpoto(e):
         split = inpt.split(maxsplit=1)
         if len(split) > 1:
             user_id, limit = split
-            try:
-                user_id = int(user_id)
-            except ValueError:
-                pass
         else:
             user_id = inpt
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            pass
     else:
         user_id = e.chat_id
 
