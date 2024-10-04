@@ -26,11 +26,14 @@ try:
 except ImportError:
     aiohttp = None
 
+
+"""
+# this shit doesn't works and causes weird errors
+
 try:
     import aiodns
 except ImportError:
     aiodns = None
-
 
 # dns for async_searcher
 _kwargs = {"ttl_dns_cache": 120, "loop": loop}
@@ -46,8 +49,9 @@ if aiohttp and aiodns:
     )
     _kwargs["resolver"] = resolver
 
-
 connector = aiohttp.TCPConnector(**_kwargs)
+"""
+
 
 _workers = __import__("multiprocessing").cpu_count()
 
@@ -114,9 +118,7 @@ async def async_searcher(
     if aiohttp:
         if timeout:
             timeout = aiohttp.ClientTimeout(total=int(timeout))
-        async with aiohttp.ClientSession(
-            headers=headers, connector=connector
-        ) as client:
+        async with aiohttp.ClientSession(headers=headers) as client:
             data = await client.request(method, url, *args, timeout=timeout, **kwargs)
             if evaluate:
                 from telethon.helpers import _maybe_await
