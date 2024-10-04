@@ -109,9 +109,6 @@ async def async_searcher(
     *args,
     **kwargs,
 ):
-    if evaluate:
-        from telethon.helpers import _maybe_await
-
     method = "POST" if post else method.upper()
 
     if aiohttp:
@@ -122,6 +119,8 @@ async def async_searcher(
         ) as client:
             data = await client.request(method, url, *args, timeout=timeout, **kwargs)
             if evaluate:
+                from telethon.helpers import _maybe_await
+
                 return await _maybe_await(evaluate(data))
             elif re_json:
                 return await data.json()
@@ -157,6 +156,8 @@ async def async_searcher(
 
         data = await sync_request()
         if evaluate:
+            from telethon.helpers import _maybe_await
+
             return await _maybe_await(evaluate(data))
         return data
 
