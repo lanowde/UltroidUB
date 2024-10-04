@@ -260,7 +260,7 @@ async def _(event):
     done, key = await get_paste(message, extension=ext[1:])
     if not done:
         return await xx.eor(key)
-    link = f"https://spaceb.in/{key}"
+    link = f"https://spaceb.in/{key}{ext}"
     raw = link + "/raw"
     reply_text = (
         f"• **Pasted to SpaceBin :** [Space]({link})\n• **Raw Url :** : [Raw]({raw})"

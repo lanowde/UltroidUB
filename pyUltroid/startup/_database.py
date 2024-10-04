@@ -495,7 +495,9 @@ def _UltroidDB():
                 from pymongo import MongoClient
 
             cluster = Var.MONGO_DBNAME or "UltroidDB"
-            return MongoDB(key=Var.MONGO_URI, _name="Mongo", to_cache=True, db_name=cluster)
+            return MongoDB(
+                key=Var.MONGO_URI, _name="Mongo", to_cache=True, db_name=cluster
+            )
         elif Var.DATABASE_URL:
             LOGS.info("Connecting to SQL Database..")
             try:

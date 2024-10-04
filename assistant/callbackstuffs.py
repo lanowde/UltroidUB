@@ -357,7 +357,7 @@ async def _(e):
         ok, index = ok.split("|")
     hmm = await asyncread(ok)
     _, key = await get_paste(hmm, extension="py")
-    link = f"https://spaceb.in/{key}"
+    link = f"https://spaceb.in/{key}.py"
     raw = link + "/raw"
     if not _:
         return await e.answer(key[:30], alert=True)
