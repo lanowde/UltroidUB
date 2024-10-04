@@ -115,11 +115,11 @@ class _BaseDatabase:
 class MongoDB(_BaseDatabase):
     __slots__ = ("dB", "db", "to_cache", "_name")
 
-    def __init__(self, key, to_cache, _name="MongoDB", dbname="UltroidDB"):
+    def __init__(self, key, to_cache, _name="MongoDB", db_name="UltroidDB"):
         from pymongo import MongoClient
 
-        self.dB = MongoClient(key, serverSelectionTimeoutMS=5000)
-        self.db = self.dB[dbname]
+        self.dB = MongoClient(key, serverSelectionTimeoutMS=6500)
+        self.db = self.dB[db_name]
         self.to_cache = to_cache
         self._name = _name
         super().__init__()
@@ -485,6 +485,8 @@ def _UltroidDB():
             )
         elif Var.MONGO_URI:
             LOGS.info("Connecting to Mongo Database..")
+            if Var.MONGO_DBNAME:
+                LOGS.debug(f"Using {Var.MONGO_DBNAME} Cluster!")
             try:
                 from pymongo import MongoClient
             except ImportError:
@@ -492,7 +494,8 @@ def _UltroidDB():
                 system(f"{executable} -m pip install -q pymongo[srv]")
                 from pymongo import MongoClient
 
-            return MongoDB(key=Var.MONGO_URI, _name="Mongo", to_cache=True)
+            cluster = Var.MONGO_DBNAME or "UltroidDB"
+            return MongoDB(key=Var.MONGO_URI, _name="Mongo", to_cache=True, db_name=cluster)
         elif Var.DATABASE_URL:
             LOGS.info("Connecting to SQL Database..")
             try:

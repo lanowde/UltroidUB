@@ -52,6 +52,7 @@ class Var:
 
     # for MONGODB users
     MONGO_URI = config("MONGO_URI", default=None)
+    MONGO_DBNAME = config("MONGO_DBNAME", default=None)
 
     # custom
     USER = config("_USER", default=config("USER", "None"))
