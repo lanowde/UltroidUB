@@ -261,7 +261,7 @@ async def _(event):
     if not done:
         return await xx.eor(key)
     link = f"https://spaceb.in/{key}{ext}"
-    raw = link + "/raw"
+    raw = f"https://spaceb.in/{key}/raw"
     reply_text = (
         f"• **Pasted to SpaceBin :** [Space]({link})\n• **Raw Url :** : [Raw]({raw})"
     )
