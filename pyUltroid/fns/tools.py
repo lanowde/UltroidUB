@@ -431,12 +431,11 @@ async def get_google_images(query):
     return google_images
 
 
-# Thanks https://t.me/KukiUpdates/23 for ChatBotApi
+# Thanks https://t.me/ImSafone for ChatBotApi
 async def get_chatbot_reply(message):
-    chatbot_base = "https://kuki-api-lac.vercel.app/message={}"
-    req_link = chatbot_base.format(message)
+    req_link = f"https://api.safone.dev/chatbot?query={message}"
     try:
-        return (await async_searcher(req_link, re_json=True)).get("reply")
+        return (await async_searcher(req_link, re_json=True)).get("response")
     except Exception:
         LOGS.info(f"chatbot error: {format_exc()}")
 

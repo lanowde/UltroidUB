@@ -11,7 +11,7 @@ pyyaml
 pytgcalls>=3.0.0.dev24
 
 # optional
-akinator
+git+https://github.com/lanowde/akinator.git
 apscheduler
 aiohttp[speedups]
 bs4
