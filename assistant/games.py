@@ -33,19 +33,21 @@ from pyUltroid.custom.commons import async_searcher
 from . import *  # Ensure this import matches your project structure
 
 try:
-    from akipy.async_akipy import Akinator, akipyLOGS
+    from akipy.async_akipy import akipyLOGS
 except ImportError:
-    Akinator = None
+    akipyLOGS = LOGS
 
 
 games = {}
 aki_photo = "https://graph.org/file/3cc8825c029fd0cab9edc.jpg"
 
 
-@ultroid_cmd(pattern="akinator")
+@ultroid_cmd(pattern="akinator$")
 async def akina(e):
-    if not Akinator:
-        return await e.eor("Install `akinator` to use this!")
+    try:
+        from akipy.async_akipy import Akinator
+    except ImportError:
+        return await e.eor("Install `akinator` to use this Command.")
 
     sta = Akinator()
     games[e.chat_id] = {e.id: sta}
