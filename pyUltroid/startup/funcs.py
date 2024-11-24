@@ -106,6 +106,14 @@ async def startup_stuff():
     for dirs in ("auth", "downloads", "temp"):
         Path("resources").joinpath(dirs).mkdir(parents=True, exist_ok=True)
 
+    if cookie_url := udB.get_key("YT_COOKIES"):
+        path = "resources/extras/yt-cookies.txt"
+        if not Path(path).is_file():
+            try:
+                await download_file(cookie_url, path)
+            except Exception as er:
+                LOGS.exception(er)
+
     CT = udB.get_key("CUSTOM_THUMBNAIL")
     if CT:
         path = "resources/extras/thumbnail.jpg"

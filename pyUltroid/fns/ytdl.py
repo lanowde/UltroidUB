@@ -41,6 +41,9 @@ def _ytdl_options():
     opts = {}
     opts["quiet"] = True
     opts["nocheckcertificate"] = True
+    file = "resources/extras/yt-cookies.txt"
+    if Path(file).is_file():
+        opts["cookiefile"] = file
     opts["username"] = udB.get_key("YT_USERNAME")
     opts["password"] = udB.get_key("YT_PASSWORD")
     opts["noprogress"] = True
