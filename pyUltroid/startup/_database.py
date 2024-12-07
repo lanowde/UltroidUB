@@ -27,6 +27,15 @@ except ImportError:
 # ---------------------------------------------------------------------------------------------
 
 
+def _evaluate(data):
+    if data and type(data) == str:
+        try:
+            data = literal_eval(data)
+        except Exception:
+            pass
+    return data
+
+
 class _BaseDatabase:
     __slots__ = ("_cache",)
 
@@ -55,11 +64,9 @@ class _BaseDatabase:
                 return LOGS.error(f"'WRONGTYPE' Key Error for {key!r}")
             except Exception:
                 return LOGS.debug(f"Error getting key {key!r} from DB", exc_info=True)
-        if data and type(data) == str:
-            try:
-                data = literal_eval(data)
-            except Exception:
-                pass
+        if data:
+            data = _evaluate(data)
+
         return data
 
     def _re_cache(self, key=None):
@@ -112,6 +119,32 @@ class _BaseDatabase:
 # ---------------------------------------------------------------------------------------------
 
 
+class MongoExtras:
+    __slots__ = ("db",)
+
+    def __init__(self, db_name):
+        self.db = db_name
+
+    def keys(self, clus):
+        return self.db[clus].list_collection_names()
+
+    def get(cls, clus, key):
+        if x := self.db[clus][key].find_one({"_id": key}):
+            return x["value"]
+
+    def set(self, clus, key, value):
+        if key in self.keys(clus):
+            self.db[clus][key].replace_one({"_id": key}, {"value": str(value)})
+        else:
+            self.db[clus][key].insert_one({"_id": key, "value": str(value)})
+        return True
+
+    def delete(self, clus, key):
+        if key in self.keys(clus):
+            self.db[clus].drop_collection(key)
+            return True
+
+
 class MongoDB(_BaseDatabase):
     __slots__ = ("dB", "db", "to_cache", "_name")
 
@@ -135,6 +168,10 @@ class MongoDB(_BaseDatabase):
     @property
     def usage(self):
         return self.db.command("dbstats")["dataSize"]
+
+    @property
+    def mongo(self):
+        return MongoExtras(self.dB)
 
     def ping(self):
         if self.dB.server_info():
@@ -397,11 +434,7 @@ class LocalDB:
             except Exception as exc:
                 return LOGS.exception(f"Error while decoding local database file..")
         for k, v in data.items():
-            try:
-                v = literal_eval(str(v))
-            except Exception:
-                pass
-            self._cache[k] = v
+            self._cache[k] = _evaluate(v)
 
     def _rewrite_db(self):
         """Save data to database file"""
