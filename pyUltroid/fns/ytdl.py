@@ -52,6 +52,10 @@ def _ytdl_options():
     opts["addmetadata"] = True
     opts["prefer_ffmpeg"] = True
     opts["logger"] = ytdl_logger
+    if _opts := udB.get_key("YTDL_ARGS"):
+        if type(_opts) == dict:
+            opts = _opts | opts
+
     return opts
 
 
