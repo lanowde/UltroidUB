@@ -22,7 +22,7 @@
 
 import os
 
-from . import eor, get_string, udB, ultroid_cmd
+from . import eor, get_string, udB, ultroid_cmd, HNDLR
 
 
 @ultroid_cmd(pattern="get($| (.*))", fullsudo=True)

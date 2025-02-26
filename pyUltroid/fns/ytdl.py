@@ -78,9 +78,9 @@ def ytdl_progress(event, k):
             text = (
                 f"**YT Downloader**\n\n"
                 + f"Status: `{humanbytes(downloaded)}/{humanbytes(total)}` "
-                + f"`[{int(downloaded) * 100/int(total):.2f}%]`\n"
+                + f"`[{int(downloaded) * 100 / int(total):.2f}%]`\n"
                 + f"Speed: `{humanbytes(speed)}/s`\n"
-                + f"ETA: `{time_formatter(eta*1000)}`"
+                + f"ETA: `{time_formatter(eta * 1000)}`"
             )
             run_async_task(event.edit, text, id="yt_progress_bar")
             _YT_PROGRESS[idx] = now

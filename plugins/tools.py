@@ -381,7 +381,7 @@ async def _(e):
         tfls = "0 B"
     if not hb(fos + fls):
         ttol = "0 B"
-    text += f"\n\n`Folders` :  `{foc}` :   `{tfos}`\n`Files` :       `{flc}` :   `{tfls}`\n`Total` :       `{flc+foc}` :   `{ttol}`"
+    text += f"\n\n`Folders` :  `{foc}` :   `{tfos}`\n`Files` :       `{flc}` :   `{tfls}`\n`Total` :       `{flc + foc}` :   `{ttol}`"
     try:
         if (flc + foc) > 100:
             text = text.replace("`", "")
@@ -497,7 +497,7 @@ async def magic(event):
     )
     response = data.get("response", {})
     if not response.get("status"):
-        return await event.eor(f'**ERROR :** `{response["message"]}`')
+        return await event.eor(f"**ERROR :** `{response['message']}`")
     await event.eor(
         f"• **Ultroid Tiny**\n• Given Url : {url}\n• Shorten Url : {data['response']['tinyUrl']}"
     )

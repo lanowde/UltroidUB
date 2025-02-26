@@ -16,7 +16,22 @@ from pyUltroid.fns.tools import create_tl_btn, format_btn, get_msg_button
 
 from telethon import events, utils
 
-from . import TelegraphClient, asst, get_string, mediainfo, udB, ultroid_cmd
+from . import Catbox, asst, get_string, mediainfo, udB, ultroid_cmd
+
+
+async def astcmds(e):
+    xx = (e.text.replace("/", "")).lower().split()[0]
+    if cmd_reply(xx):
+        msg, media, bt = cmd_reply(xx)
+        if bt:
+            bt = create_tl_btn(bt)
+        await e.reply(msg, file=media, buttons=bt)
+
+
+def is_enabled():
+    for func, _ in asst.list_event_handlers():
+        if func == astcmds:
+            return True
 
 
 @ultroid_cmd(pattern="addcmd( (.*)|$)")
@@ -32,16 +47,14 @@ async def ac(e):
         wut = mediainfo(wt.media)
         if wut.startswith(("pic", "gif")):
             dl = await e.client.download_media(wt.media)
-            variable = uf(dl)
+            m = await Catbox(dl)
             os.remove(dl)
-            m = f"https://graph.org{variable[0]}"
         elif wut == "video":
             if wt.media.document.size > 8 * 1000 * 1000:
                 return await e.eor(get_string("com_4"), time=5)
             dl = await e.client.download_media(wt.media)
-            variable = await TelegraphClient.upload_file(dl)
+            m = await Catbox(dl)
             os.remove(dl)
-            m = f"https://graph.org{variable[0]}"
         else:
             m = utils.pack_bot_file_id(wt.media)
         if wt.text:
@@ -56,12 +69,15 @@ async def ac(e):
         if not btn:
             txt, btn = get_msg_button(wt.text)
         add_cmd(wrd, txt, None, btn)
-    asst.add_handler(
-        astcmds,
-        events.NewMessage(
-            func=lambda x: x.text.startswith("/") and x.text[1:] in list(list_cmds())
-        ),
-    )
+
+    if not is_enabled():
+        asst.add_handler(
+            astcmds,
+            events.NewMessage(
+                func=lambda x: x.text.startswith("/")
+                and x.text[1:] in list(list_cmds())
+            ),
+        )
     await e.eor(get_string("asstcmd_4").format(wrd))
 
 
@@ -83,15 +99,6 @@ async def lscmd(e):
             ok += f"/{x}" + "\n"
         return await e.eor(ok)
     return await e.eor(get_string("asstcmd_5"))
-
-
-async def astcmds(e):
-    xx = (e.text.replace("/", "")).lower().split()[0]
-    if cmd_reply(xx):
-        msg, media, bt = cmd_reply(xx)
-        if bt:
-            bt = create_tl_btn(bt)
-        await e.reply(msg, file=media, buttons=bt)
 
 
 if udB.get_key("ASST_CMDS"):

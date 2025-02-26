@@ -24,6 +24,7 @@ from shlex import quote as shquote
 from pyUltroid.fns.misc import rotate_image
 
 from . import (
+    Catbox,
     LOGS,
     TelegraphClient,
     bash,
@@ -81,8 +82,7 @@ async def mi(e):
     makehtml = ""
     if naam.endswith((".jpg", ".png")):
         if os.path.exists(naam):
-            urll = await TelegraphClient.upload_file(naam)
-            med = "https://graph.org" + urll[0]
+            med = await Catbox(naam)
         else:
             med = match
         makehtml += f"<img src='{med}'><br>"

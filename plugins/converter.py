@@ -30,7 +30,7 @@ except ImportError:
 
 from pyUltroid.custom._transfer import pyroDL, pyroUL
 from . import (
-    TelegraphClient,
+    Catbox,
     ULTConfig,
     asyncwrite,
     asyncread,
@@ -60,9 +60,9 @@ async def set_thumbnail(e):
         dl = await r.download_media(thumb=-1)
     else:
         return await e.eor("`Reply to Photo or media with thumb...`")
-    variable = await TelegraphClient.upload_file(dl)
+
+    nn = await Catbox(dl)
     os.remove(dl)
-    nn = f"https://graph.org{variable[0]}"
     udB.set_key("CUSTOM_THUMBNAIL", nn)
     await bash(f"wget '{nn}' -O resources/extras/ultroid.jpg")
     await e.eor(get_string("cvt_6").format(nn), link_preview=False)
@@ -134,6 +134,8 @@ async def uconverter(event):
         x = await a.reply(file=file)
         os.remove(file)
         await cleargif(x)
+    else:
+        return await xx.edit("`Failed to convert..`")
     await xx.delete()
 
 

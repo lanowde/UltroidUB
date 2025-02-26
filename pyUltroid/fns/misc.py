@@ -44,6 +44,7 @@ try:
     import cv2
 except ImportError:
     cv2 = None
+
 try:
     import numpy as np
 except ImportError:
@@ -53,6 +54,11 @@ try:
     from bs4 import BeautifulSoup
 except ImportError:
     BeautifulSoup = None
+
+try:
+    import catbox
+except ImportError:
+    catbox = None
 
 
 # --------------------------------------------------
@@ -288,14 +294,8 @@ class Quotly:
         async def telegraph(file_):
             file = file_ + ".png"
             Image.open(file_).save(file, "PNG")
-            files = {"file": await asyncread(file, binary=True)}
-            uri = (
-                "https://graph.org"
-                + (
-                    await async_searcher(
-                        "https://graph.org/upload", post=True, data=files, re_json=True
-                    )
-                )[0]["src"]
+            uri = catbox.helpers.upload_to_litterbox(
+                file, file_name=os.path.basename(file.name)
             )
             osremove(file, file_)
             return uri

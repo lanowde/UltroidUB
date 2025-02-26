@@ -87,6 +87,7 @@ from pyUltroid.fns.tools import get_chat_and_msgid
 from pyUltroid.fns.info import get_chat_info
 from pyUltroid.fns.misc import ReTrieveFile
 from . import (
+    Catbox,
     HNDLR,
     LOGS,
     TelegraphClient,
@@ -234,6 +235,7 @@ async def _(event):
         input_str = event.text.split(maxsplit=1)[1]
     except IndexError:
         input_str = None
+
     xx = await event.eor("` 《 Pasting... 》 `")
     downloaded_file_name, ext = None, ".txt"
     if input_str:
@@ -245,30 +247,29 @@ async def _(event):
                 previous_message,
                 "resources/downloads",
             )
-            ext = getattr(previous_message.file, "ext", ".txt")
+            ext = getattr(previous_message.file, "ext", "txt")
             message = await asyncread(downloaded_file_name)
             osremove(downloaded_file_name)
         else:
             message = previous_message.message
     else:
         message = None
+
     if not message:
         return await xx.eor(
             "`Reply to a Message/Document or Give me Some Text !`", time=5
         )
 
-    done, key = await get_paste(message, extension=ext[1:])
-    if not done:
-        return await xx.eor(key)
+    done, data = await get_paste(message, extension=ext)
+    if not done and data.get("error"):
+        return await xx.eor(f"Something Went Wrong! `{data['error']}`")
     link = f"https://spaceb.in/{key}{ext}"
     raw = f"https://spaceb.in/{key}/raw"
-    reply_text = (
-        f"• **Pasted to SpaceBin :** [Space]({link})\n• **Raw Url :** : [Raw]({raw})"
-    )
+    reply_text = f"• **Pasted to SpaceBin :** [SpaceBin]({data['link']})\n• **Raw Url :** : [Raw]({data['raw']})"
     try:
         if event.client._bot:
             return await xx.eor(reply_text)
-        ok = await event.client.inline_query(asst.me.username, f"pasta-{key}")
+        ok = await event.client.inline_query(asst.me.username, f"pasta-{data['link']}")
         await ok[0].click(event.chat_id, reply_to=event.reply_to_msg_id, hide_via=True)
         await xx.delete()
     except BaseException as e:
@@ -475,16 +476,15 @@ async def abs_rmbg(event):
 
 
 @ultroid_cmd(
-    pattern="telegraph( (.*)|$)",
+    pattern="(telegraph|catbox)( (.*)|$)",
 )
 async def telegraphcmd(event):
-    if not Image:
-        return await event.eor(f"`Install 'Pillow' module to use this..`")
     xx = await event.eor(get_string("com_1"))
-    match = event.pattern_match.group(2) or "Ultroid"
+    match = event.pattern_match.group(3) or "Ultroid"
     reply = await event.get_reply_message()
     if not reply:
         return await xx.eor("`Reply to Message.`")
+
     if not reply.media and reply.message:
         content = reply.message
     else:
@@ -492,6 +492,10 @@ async def telegraphcmd(event):
         dar = mediainfo(reply.media)
         if dar == "sticker":
             file = f"{getit}.png"
+            if not Image:
+                osremove(getit)
+                return await event.eor(f"`Install 'Pillow' module to use this..`")
+
             Image.open(getit).save(file)
             osremove(getit)
             getit = file
@@ -502,15 +506,17 @@ async def telegraphcmd(event):
             getit = file
         if "document" not in dar:
             try:
-                urll = await TelegraphClient.upload_file(getit)
+                nn = await Catbox(getit)
                 nn = f"https://graph.org{urll[0]}"
-                amsg = f"Uploaded to [Telegraph]({nn}) !"
+                amsg = f"Uploaded to [CatBox]({nn}) !"
             except Exception as e:
-                amsg = f"Error : {e}"
+                amsg = f"Error: {e}"
             osremove(getit)
             return await xx.eor(amsg)
+
         content = pathlib.Path(getit).read_text()
         osremove(getit)
+
     makeit = await TelegraphClient.create_page(title=match, content=[content])
     await xx.eor(f"Pasted to Telegraph : [Telegraph]({makeit})", link_preview=False)
 

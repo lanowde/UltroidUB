@@ -8,7 +8,7 @@
 import re
 import time
 from datetime import datetime
-from os import remove
+from os.path import splitext
 
 from telethon import Button
 from telethon.tl.types import InputWebDocument, Message
@@ -122,10 +122,14 @@ async def inline_handler(event):
 
 
 @in_pattern("pasta", owner=True)
-async def _(event):
+async def inlone_paste(event):
     ok = event.text.split("-")[1]
-    link = f"https://spaceb.in/{ok}"
-    raw = link + "/raw"
+    if not ok.startswith("http"):
+        link = f"https://spaceb.in/{ok}"
+        raw = f"https://spaceb.in/api/v1/documents/{ok}/raw"
+    else:
+        link = ok
+        raw = f"{splitext(ok)[0]}/raw"
     result = await event.builder.article(
         title="Paste",
         text="Pasted to Spacebin 🌌",
@@ -344,12 +348,12 @@ def page_num(index, key):
             [
                 Button.inline(
                     "« Pʀᴇᴠɪᴏᴜs",
-                    data=f"uh_{key}_{index-1}",
+                    data=f"uh_{key}_{index - 1}",
                 ),
                 Button.inline("« Bᴀᴄᴋ »", data="open"),
                 Button.inline(
                     "Nᴇxᴛ »",
-                    data=f"uh_{key}_{index+1}",
+                    data=f"uh_{key}_{index + 1}",
                 ),
             ]
         )

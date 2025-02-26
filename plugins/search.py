@@ -141,44 +141,49 @@ async def goimg(event):
     await nn.delete()
 
 
-@ultroid_cmd(pattern="reverse( (.*)|$)")
+@ultroid_cmd(pattern="reverse$")
 async def reverse(event):
-    target = None
-    args = event.pattern_match.group(2)
+    reply = await event.get_reply_message()
+    if not reply:
+        return await event.eor("`Reply to an Image`")
+
     ult = await event.eor(get_string("com_1"))
-    if args and string_is_url(args):
-        target = args
-    elif event.reply_to:
-        reply = await event.get_reply_message()
-        if reply.media:
-            dl = await reply.download_media()
-            target = await con.convert(dl, convert_to="png")
-    if not target:
-        return await ult.eor("`Reply to an Image or give a URL..`", time=8)
-
-    try:
-        response = await GoogleReverseSearch.init(target, similar_results=False)
-        if not (response and (response := response.get("match"))):
-            return await ult.edit(f"`Could not find any result..`")
-
-        title, link, info, page = (
-            response.get("title"),
-            response.get("search_url"),
-            response.get("info"),
-            response.get("page_url"),
-        )
-        result = f"[{title}]({link})" if link else f"`{title}`"
-        if info:
-            result += f"  -  `{info}`"
-        if page:
-            result += f"\n\n**URL** - {page}"
-        await ult.edit(f"`Got Results for this Image >>>`\n\n**Sauce:**  {result}")
-    except Exception as exc:
-        LOGS.exception(exc)
-        await ult.edit(f"**Error:**  `{exc}`")
-    finally:
-        if event.reply_to:
-            osremove(target, dl)
+    dl = await reply.download_media()
+    file = await con.convert(dl, convert_to="png")
+    img = Image.open(file)
+    x, y = img.size
+    files = {"encoded_image": (file, open(file, "rb"))}
+    grs = requests.post(
+        "https://www.google.com/searchbyimage/upload",
+        files=files,
+        allow_redirects=False,
+    )
+    loc = grs.headers.get("Location")
+    response = await async_searcher(
+        loc,
+        headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0",
+        },
+    )
+    with open("response.html", "w") as f:
+        f.write(response)
+    xx = bs(response, "html.parser")
+    div = xx.find_all("div", {"class": "kb0PBd"})[0]
+    alls = div.find("a")
+    link = alls["href"]
+    text = alls.text
+    osremove(file)
+    await ult.edit(f"`Dimension ~ {x} : {y}`\nSauce ~ [{text}](google.com{link})")
+    images = await get_google_images(text)
+    for z in images[:2]:
+        try:
+            await event.client.send_file(
+                event.chat_id,
+                file=z["original"],
+                caption="Similar Images Realted to Search",
+            )
+        except Exception as er:
+            LOGS.exception(er)
 
 
 @ultroid_cmd(

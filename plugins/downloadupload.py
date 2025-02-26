@@ -69,7 +69,7 @@ async def downlomder(event):
         LOGS.exception(exc)
         return await msg.edit(f"**Error in URL download:** \n`{exc}`")
 
-    await msg.edit(f"Downloaded to `{filename}` \nin {time_formatter(d*1000)}.")
+    await msg.edit(f"Downloaded to `{filename}` \nin {time_formatter(d * 1000)}.")
 
 
 @ultroid_cmd(
@@ -219,7 +219,7 @@ async def uploamder(event):
                         force_document=force_doc,
                         thumb=_thumb,
                         attributes=attributes,
-                        caption=f"`Uploaded` `{files}` `in {time_formatter(_*1000)}`",
+                        caption=f"`Uploaded` `{files}` `in {time_formatter(_ * 1000)}`",
                         reply_to=event.reply_to_msg_id or event,
                     )
                     s += 1
@@ -247,7 +247,7 @@ async def uploamder(event):
             force_document=force_doc,
             thumb=_thumb,
             attributes=attributes,
-            caption=f"`Uploaded` `{result}` `in {time_formatter(_*1000)}`",
+            caption=f"`Uploaded` `{result}` `in {time_formatter(_ * 1000)}`",
         )
         await cleargif(y)
     await msg.try_delete()

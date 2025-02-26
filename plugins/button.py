@@ -15,7 +15,7 @@ from telethon.utils import pack_bot_file_id
 
 from pyUltroid.fns.tools import create_tl_btn, get_msg_button
 
-from . import HNDLR, TelegraphClient, get_string, mediainfo, ultroid_cmd
+from . import Catbox, HNDLR, get_string, mediainfo, ultroid_cmd
 from ._inline import something
 
 
@@ -30,15 +30,13 @@ async def butt(event):
             wut = mediainfo(wt.media)
         if wut and wut.startswith(("pic", "gif")):
             dl = await wt.download_media()
-            variable = await TelegraphClient.upload_file(dl)
-            media = f"https://graph.org{variable[0]}"
+            media = await Catbox(dl, temp=True)
         elif wut == "video":
-            if wt.media.document.size > 8 * 1000 * 1000:
+            if wt.media.document.size > 10 * 1000 * 1000:
                 return await event.eor(get_string("com_4"), time=5)
             dl = await wt.download_media()
-            variable = await TelegraphClient.upload_file(dl)
+            media = await Catbox(dl, temp=True)
             os.remove(dl)
-            media = f"https://graph.org{variable[0]}"
         else:
             media = pack_bot_file_id(wt.media)
     try:

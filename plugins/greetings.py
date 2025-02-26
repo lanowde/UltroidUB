@@ -4,6 +4,7 @@
 # This file is a part of < https://github.com/TeamUltroid/Ultroid/ >
 # PLease read the GNU Affero General Public License in
 # <https://www.github.com/TeamUltroid/Ultroid/blob/main/LICENSE/>.
+
 """
 ✘ Commands Available -
 
@@ -48,7 +49,7 @@ from pyUltroid.dB.greetings_db import (
 )
 from pyUltroid.fns.tools import create_tl_btn, format_btn, get_msg_button
 
-from . import HNDLR, TelegraphClient, eor, get_string, mediainfo, ultroid_cmd
+from . import Catbox, HNDLR, eor, get_string, mediainfo, ultroid_cmd
 from ._inline import something
 
 
@@ -68,16 +69,14 @@ async def setwel(event):
         wut = mediainfo(r.media)
         if wut.startswith(("pic", "gif")):
             dl = await r.download_media()
-            variable = await TelegraphClient.upload_file(dl)
+            m = await Catbox(dl)
             os.remove(dl)
-            m = f"https://graph.org{variable[0]}"
         elif wut == "video":
-            if r.media.document.size > 8 * 1000 * 1000:
+            if r.media.document.size > 10 * 1000 * 1000:
                 return await eor(x, get_string("com_4"), time=5)
             dl = await r.download_media()
-            variable = await TelegraphClient.upload_file(dl)
+            m = await Catbox(dl)
             os.remove(dl)
-            m = f"https://graph.org{variable[0]}"
         elif wut == "web":
             m = None
         else:
@@ -133,16 +132,14 @@ async def setgb(event):
         wut = mediainfo(r.media)
         if wut.startswith(("pic", "gif")):
             dl = await r.download_media()
-            variable = await TelegraphClient.upload_file(dl)
+            m = await Catbox(dl)
             os.remove(dl)
-            m = f"https://graph.org{variable[0]}"
         elif wut == "video":
-            if r.media.document.size > 8 * 1000 * 1000:
+            if r.media.document.size > 10 * 1000 * 1000:
                 return await eor(x, get_string("com_4"), time=5)
             dl = await r.download_media()
-            variable = await TelegraphClient.upload_file(dl)
+            m = await Catbox(dl)
             os.remove(dl)
-            m = f"https://graph.org{variable[0]}"
         elif wut == "web":
             m = None
         else:

@@ -137,7 +137,7 @@ def ultroid_cmd(
                 client = ultroid_bot if ult.client._bot else asst
                 await client.send_message(
                     udB.get_key("LOG_CHANNEL"),
-                    f"`FloodWaitError:\n{str(fwerr)}\n\nBot Sleeping for {tf((fwerr.seconds + 15)*1000)}`",
+                    f"`FloodWaitError:\n{str(fwerr)}\n\nBot Sleeping for {tf((fwerr.seconds + 15) * 1000)}`",
                 )
                 # await ultroid_bot.disconnect()
                 sleep(fwerr.seconds + 15)

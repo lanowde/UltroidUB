@@ -463,7 +463,7 @@ async def ult_destroyer(e):
         for i in range(1, random.randint(10, 20)):
             stick = random.choice(
                 (
-                    stick.replace(f"[{i}]", f"[{(i+i)*3}]"),
+                    stick.replace(f"[{i}]", f"[{(i + i) * 3}]"),
                     stick.replace(f".{i}", f".{i}{i}"),
                 )
             )

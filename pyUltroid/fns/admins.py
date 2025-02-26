@@ -142,7 +142,7 @@ def lock_unlock(query, lock=True):
     rights = types.ChatBannedRights(None)
     _do = lock
     if query == "msgs":
-        for i in ["send_messages", "invite_users", "pin_messages" "change_info"]:
+        for i in ["send_messages", "invite_users", "pin_messageschange_info"]:
             setattr(rights, i, _do)
     elif query == "media":
         setattr(rights, "send_media", _do)

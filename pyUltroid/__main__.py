@@ -100,7 +100,7 @@ def main():
 
     LOGS.info(
         suc_msg.format(
-            f"Took {time_formatter((time.time() - start_time)*1000)} to start •ULTROID•"
+            f"Took {time_formatter((time.time() - start_time) * 1000)} to start •ULTROID•"
         )
     )
 

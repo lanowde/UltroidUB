@@ -36,7 +36,7 @@ async def mean(event):
     url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{wrd}"
     out = await async_searcher(url, re_json=True)
     try:
-        return await event.eor(f'**{out["title"]}**')
+        return await event.eor(f"**{out['title']}**")
     except (KeyError, TypeError):
         pass
     defi = out[0]["meanings"][0]["definitions"][0]

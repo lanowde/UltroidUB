@@ -331,7 +331,7 @@ async def _(e):
                 chats += 1
             except FloodWaitError as fw:
                 LOGS.info(
-                    f"[FLOOD_WAIT_ERROR] : on Ungban\nSleeping for {fw.seconds+10}"
+                    f"[FLOOD_WAIT_ERROR] : on Ungban\nSleeping for {fw.seconds + 10}"
                 )
                 await asyncio.sleep(fw.seconds + 10)
                 try:
@@ -411,7 +411,7 @@ async def _(e):
                 chats += 1
             except FloodWaitError as fw:
                 LOGS.info(
-                    f"[FLOOD_WAIT_ERROR] : on GBAN Command\nSleeping for {fw.seconds+10}"
+                    f"[FLOOD_WAIT_ERROR] : on GBAN Command\nSleeping for {fw.seconds + 10}"
                 )
                 await asyncio.sleep(fw.seconds + 10)
                 try:

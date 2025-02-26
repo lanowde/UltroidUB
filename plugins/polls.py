@@ -4,6 +4,7 @@
 # This file is a part of < https://github.com/TeamUltroid/Ultroid/ >
 # PLease read the GNU Affero General Public License in
 # <https://www.github.com/TeamUltroid/Ultroid/blob/main/LICENSE/>.
+
 """
 ✘ Commands Available -
 
@@ -19,7 +20,7 @@
 
 """
 
-from telethon.tl.types import InputMediaPoll, Poll, PollAnswer
+from telethon.tl.types import InputMediaPoll, Poll, PollAnswer, TextWithEntities
 
 from . import get_string, ultroid_cmd
 
@@ -47,7 +48,7 @@ async def uri_poll(e):
         if "_" in ptype:
             karzo = [str(int(ptype.split("_")[1]) - 1).encode()]
             ptype = ptype.split("_")[0]
-        if ptype not in ["public", "quiz", "multiple"]:
+        if ptype not in ("public", "quiz", "multiple"):
             return await e.eor("`Invalid Poll Type...`", time=5)
         if ptype == "multiple":
             mpp = True
@@ -58,10 +59,20 @@ async def uri_poll(e):
     if len(option) <= 1:
         return await e.eor("`Options Should be More than 1..`", time=5)
     m = await e.eor(get_string("com_1"))
-    OUT = [PollAnswer(option[on], str(on).encode()) for on in range(len(option))]
+    OUT = [
+        PollAnswer(TextWithEntities(option[on], entities=[]), str(on).encode())
+        for on in range(len(option))
+    ]
     await e.respond(
         file=InputMediaPoll(
-            Poll(20, ques, OUT, multiple_choice=mpp, public_voters=publ, quiz=quizo),
+            Poll(
+                20,
+                TextWithEntities(ques, entities=[]),
+                OUT,
+                multiple_choice=mpp,
+                public_voters=publ,
+                quiz=quizo,
+            ),
             correct_answers=karzo,
         ),
     )

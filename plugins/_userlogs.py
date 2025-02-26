@@ -55,12 +55,11 @@ async def all_messages_catcher(e):
     x = await e.get_sender()
     if isinstance(x, User) and (x.bot or x.verified):
         return
-    if not udB.get_key("TAG_LOG"):
+
+    NEEDTOLOG = udB.get_key("TAG_LOG")
+    if not NEEDTOLOG or e.chat_id == NEEDTOLOG:
         return
-    try:
-        NEEDTOLOG = udB.get_key("TAG_LOG")
-    except Exception:
-        return LOGS.info(get_string("userlogs_1"))
+
     buttons = await parse_buttons(e)
     try:
         sent = await not_so_fast(

@@ -230,7 +230,7 @@ print(
 {Fore.YELLOW}# Installing other non mandatory requirements.
 (You can Install them, if you want command using them to work!){Fore.RESET}
 
-{'- '.join(list(OPT_PACKAGES.keys()))}
+{"- ".join(list(OPT_PACKAGES.keys()))}
 
 Enter [ A = Ask for each, I = Install all, S = Skip, E = Exit]"""
     )

@@ -430,7 +430,7 @@ async def plug(plugin_channels):
         # plugUnzippr = await plug_unzipper(ultroid_bot, chat)
         # if not plugUnzippr: continue
         try:
-            LOGS.info(f"{'•'*4} {chat}")
+            LOGS.info(f"{'•' * 4} {chat}")
             async for x in ultroid_bot.iter_messages(
                 chat, search=".py", filter=InputMessagesFilterDocument, wait_time=10
             ):

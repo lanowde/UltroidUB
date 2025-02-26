@@ -89,9 +89,9 @@ async def warn(e):
         ok = await ultroid_bot.get_entity(user)
         user = inline_mention(ok)
         r = r.split("|$|")
-        text = f"User {user} Got {action} Due to {count+1} Warns.\n\n"
+        text = f"User {user} Got {action} Due to {count + 1} Warns.\n\n"
         for x in range(c):
-            text += f"•**{x+1}.** {r[x]}\n"
+            text += f"•**{x + 1}.** {r[x]}\n"
         await e.eor(text)
         return reset_warn(e.chat_id, ok.id)
     add_warn(e.chat_id, user, count + 1, r)
@@ -99,7 +99,7 @@ async def warn(e):
     user = inline_mention(ok)
     await eor(
         e,
-        f"**WARNING :** {count+1}/{number}\n**To :**{user}\n**Be Careful !!!**\n\n**Reason** : {reason}",
+        f"**WARNING :** {count + 1}/{number}\n**To :**{user}\n**Be Careful !!!**\n\n**Reason** : {reason}",
     )
 
 
@@ -156,7 +156,7 @@ async def twarns(e):
         r = r.split("|$|")
         text = f"User {user} Got {c} Warns.\n\n"
         for x in range(c):
-            text += f"•**{x+1}.** {r[x]}\n"
+            text += f"•**{x + 1}.** {r[x]}\n"
         await e.eor(text)
     else:
         await e.eor("`No Warnings`")
@@ -166,15 +166,22 @@ async def twarns(e):
 async def warnset(e):
     ok = e.pattern_match.group(1).strip()
     if not ok:
-        return await e.eor("stuff")
+        return await e.eor("Invalid format. Correct usage: .setwarns <number>|<action>")
     if "|" in ok:
         try:
-            number, action = int(ok.split()[0]), ok.split()[1]
-        except BaseException:
-            return await e.eor(get_string("schdl_2"), time=5)
-        if ("ban" or "kick" or "mute") not in action:
-            return await e.eor("`Only mute / ban / kick option suported`", time=5)
+            number, action = ok.split("|")
+            number = int(number.strip())
+            action = action.strip()
+        except ValueError:
+            return await e.eor(
+                "Invalid format. Correct usage: .setwarns <number>|<action>", time=5
+            )
+        if action not in ("ban", "mute", "kick"):
+            return await e.eor("Only mute / ban / kick options are supported", time=5)
+
         udB.set_key("SETWARN", f"{number} {action}")
-        await e.eor(f"Done Your Warn Count is now {number} and Action is {action}")
+        await e.eor(f"Done. Your Warn Count is now {number} and Action is {action}")
     else:
-        await e.eor(get_string("schdl_2"), time=5)
+        await e.eor(
+            "Invalid format. Correct usage: .setwarns <number>|<action>", time=5
+        )

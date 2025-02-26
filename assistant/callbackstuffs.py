@@ -26,7 +26,7 @@ from telethon.tl.types import MessageMediaWebPage
 from telethon.utils import get_peer_id
 
 from pyUltroid.fns.helper import fast_download
-from pyUltroid.fns.tools import Carbon, TelegraphClient, get_paste
+from pyUltroid.fns.tools import Carbon, Catbox, get_paste
 from pyUltroid.custom.commons import async_searcher, osremove, progress
 from pyUltroid.custom._extras import FixedSizeDict
 from pyUltroid.startup.loader import Loader
@@ -356,11 +356,10 @@ async def _(e):
     if "|" in ok:
         ok, index = ok.split("|")
     hmm = await asyncread(ok)
-    _, key = await get_paste(hmm, extension="py")
-    link = f"https://spaceb.in/{key}.py"
-    raw = link + "/raw"
-    if not _:
-        return await e.answer(key[:30], alert=True)
+    _, data = await get_paste(hmm, extension="py")
+    if not data.get("link"):
+        return await e.answer(data["error"][:45], alert=True)
+    link, raw = data["link"], data["raw"]
     if ok.startswith("addons"):
         key = "Addons"
     elif ok.startswith("vcbot"):
@@ -804,8 +803,7 @@ async def media(event):
         else:
             media = await event.client.download_media(response, "alvpc")
             try:
-                x = await TelegraphClient.upload_file(media)
-                url = f"https://graph.org/{x[0]}"
+                url = await Catbox(media)
                 remove(media)
             except BaseException as er:
                 LOGS.exception(er)
@@ -932,6 +930,7 @@ async def media(event):
                 )
         except BaseException as er:
             LOGS.exception(er)
+
         media = await event.client.download_media(response, "pmpc")
         if (
             not (response.text).startswith("/")
@@ -943,8 +942,7 @@ async def media(event):
             url = response.file.id
         else:
             try:
-                x = await TelegraphClient.upload_file(media, anon=True)
-                url = f"https://graph.org/{x[0]}"
+                url = await Catbox(media)
                 remove(media)
             except BaseException as er:
                 LOGS.exception(er)
@@ -1213,8 +1211,7 @@ async def media(event):
             url = text_to_url(response)
         else:
             try:
-                x = await TelegraphClient.upload_file(media)
-                url = f"https://graph.org/{x[0]}"
+                url = await Catbox(media)
                 remove(media)
             except BaseException as er:
                 LOGS.exception(er)
