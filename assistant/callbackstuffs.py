@@ -26,8 +26,9 @@ from telethon.tl.types import MessageMediaWebPage
 from telethon.utils import get_peer_id
 
 from pyUltroid.fns.helper import fast_download
-from pyUltroid.fns.tools import Carbon, Catbox, get_paste
+from pyUltroid.fns.tools import Carbon, get_paste
 from pyUltroid.custom.commons import async_searcher, osremove, progress
+from pyUltroid.custom.functions import Catbox
 from pyUltroid.custom._extras import FixedSizeDict
 from pyUltroid.startup.loader import Loader
 

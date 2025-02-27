@@ -173,10 +173,8 @@ def Catbox(
         mime_type = mimetypes.guess_type(file)[0]
         files = {"fileToUpload": (path.name, content, mime_type)}
     elif isinstance(file, BytesIO):
-        if not (file_name and mime_type):
-            raise ValueError(
-                "Provide 'file_name' and 'mime_type' in arguments for this to work."
-            )
+        if not file_name:
+            raise ValueError("Provide 'file_name' in arguments for this to work.")
 
         mime_type = mime_type or "application/octet-stream"
         files = {"fileToUpload": (file_name, file, mime_type)}

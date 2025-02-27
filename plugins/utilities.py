@@ -75,6 +75,7 @@ from telethon.tl.types import (
     Channel,
     Chat,
     InputMediaPoll,
+    TextWithEntities,
     Poll,
     PollAnswer,
     TLObject,
@@ -263,8 +264,8 @@ async def _(event):
     done, data = await get_paste(message, extension=ext)
     if not done and data.get("error"):
         return await xx.eor(f"Something Went Wrong! `{data['error']}`")
-    link = f"https://spaceb.in/{key}{ext}"
-    raw = f"https://spaceb.in/{key}/raw"
+    link = data["link"]
+    raw = data["raw"]
     reply_text = f"• **Pasted to SpaceBin :** [SpaceBin]({data['link']})\n• **Raw Url :** : [Raw]({data['raw']})"
     try:
         if event.client._bot:
@@ -507,7 +508,6 @@ async def telegraphcmd(event):
         if "document" not in dar:
             try:
                 nn = await Catbox(getit)
-                nn = f"https://graph.org{urll[0]}"
                 amsg = f"Uploaded to [CatBox]({nn}) !"
             except Exception as e:
                 amsg = f"Error: {e}"
@@ -596,8 +596,11 @@ async def sugg(event):
             file=InputMediaPoll(
                 poll=Poll(
                     id=12345,
-                    question=text,
-                    answers=[PollAnswer("Yes", b"1"), PollAnswer("No", b"2")],
+                    question=TextWithEntities(text, entities=[]),
+                    answers=[
+                        PollAnswer(TextWithEntities("Yes", entities=[]), b"1"),
+                        PollAnswer(TextWithEntities("No", entities=[]), b"2"),
+                    ],
                 ),
             ),
             reply_to=reply_to,

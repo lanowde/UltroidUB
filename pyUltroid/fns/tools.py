@@ -397,16 +397,20 @@ async def get_paste(data: str, extension: str = "txt"):
             "raw": f"https://spaceb.in/{key}/raw",
         }
     except Exception:
+        from pyUltroid.custom.functions import Catbox
+
         try:
-            url = "https://dpaste.org/api/"
-            data = {
-                "format": "json",
-                "content": data.encode("utf-8"),
-                "lexer": extension,
-                "expires": "604800",  # expire in week
-            }
-            res = await async_searcher(url, data=data, post=True, re_json=True)
-            return True, {"link": res["url"], "raw": f"{res['url']}/raw"}
+            res = await Catbox(
+                BytesIO(data.encode()), file_name="paste.txt", mime_type="text/plain"
+            )
+            return (
+                (True, {"link": res, "raw": res})
+                if res
+                else (
+                    None,
+                    {"link": None, "raw": None, "error": "Something Went Wrong!"},
+                )
+            )
         except Exception as e:
             LOGS.exception(e)
             return None, {"link": None, "raw": None, "error": str(e)}
