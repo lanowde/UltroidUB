@@ -119,12 +119,12 @@ async def fille_leenks(e):
     __cache = f"{chat_id}:{msg_id}"
     buttons = [
         [
-            Button.inline("anonfiles", data=f"flanonfiles//{__cache}"),
+            Button.inline("catbox", data=f"flcatbox//{__cache}"),
             Button.inline("transfer", data=f"fltransfer//{__cache}"),
         ],
         [
-            Button.inline("bayfiles", data=f"flbayfiles//{__cache}"),
-            Button.inline("x0.at", data=f"flx0.at//{__cache}"),
+            Button.inline("filebin", data=f"flfilebin//{__cache}"),
+            Button.inline("0x0.st", data=f"fl0x0.st//{__cache}"),
         ],
         [
             Button.inline("file.io", data=f"flfile.io//{__cache}"),

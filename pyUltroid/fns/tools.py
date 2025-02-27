@@ -69,11 +69,6 @@ except ImportError:
     Telegraph = None
 
 try:
-    import catbox
-except ImportError:
-    catbox = None
-
-try:
     from bs4 import BeautifulSoup
 except ImportError:
     BeautifulSoup = None
@@ -396,7 +391,7 @@ async def get_paste(data: str, extension: str = "txt"):
             re_json=True,
         )
         key = res["payload"]["id"]
-        _ext = "" if ext == "txt" else f".{ext}"
+        _ext = "" if extension == "txt" else f".{extension}"
         return True, {
             "link": f"https://spaceb.in/{key}{_ext}",
             "raw": f"https://spaceb.in/{key}/raw",
@@ -638,15 +633,6 @@ class _TelegraphClient:
 TelegraphClient = _TelegraphClient()
 
 
-@run_async
-def Catbox(file, temp=False, **kwargs):
-    if not catbox:
-        return LOGS.error("'catbox-uploader' is not Installed!")
-
-    func = catbox.helpers.upload_to_litterbox if temp else catbox.helpers.upload_file
-    return func(file, **kwargs)
-
-
 async def Carbon(
     code,
     base_url="https://carbonara.solopov.dev/api/cook",
@@ -769,10 +755,12 @@ class TgConverter:
         try:
             if out_path.endswith("webp"):
                 er, out = await bash(
-                    f"lottie_convert.py --webp-quality 100 --webp-skip-frames 100 '{file}' '{out_path}'"
+                    f"lottie_convert.py --webp-quality 100 --webp-skip-frames 100 {shquote(file)} {shquote(out_path)}"
                 )
             else:
-                er, out = await bash(f"lottie_convert.py '{file}' '{out_path}'")
+                er, out = await bash(
+                    f"lottie_convert.py {shquote(file)} {shquote(out_path)}"
+                )
 
             if er:
                 LOGS.error(f"Error in animated_sticker conversion: {er}")
@@ -797,7 +785,7 @@ class TgConverter:
         LOGS.info(f"Converting to gif: {file} -> {out_path}")
         try:
             er, out = await bash(
-                f"lottie_convert.py '{_unquote_text(file)}' '{_unquote_text(out_path)}'"
+                f"lottie_convert.py {shquote(file)} {shquote(out_path)}"
             )
             if er:
                 LOGS.error(f"Error in animated_to_gif conversion: {er}")
@@ -851,11 +839,11 @@ class TgConverter:
             )
         if output.endswith(".gif"):
             out, er = await bash(
-                f"ffmpeg -i '{input_}' -an -sn -c:v copy '{output}.mp4' -y"
+                f"ffmpeg -i {shquote(input_)} -an -sn -c:v copy {shquote(output)}.mp4 -y"
             )
             LOGS.info(f"FFmpeg output: {out}, Error: {er}")
         else:
-            out, er = await bash(f"ffmpeg -i '{input_}' '{output}' -y")
+            out, er = await bash(f"ffmpeg -i {shquote(input_)} {shquote(output)} -y")
             LOGS.info(f"FFmpeg output: {out}, Error: {er}")
         if remove:
             os.remove(input_)
@@ -879,7 +867,7 @@ class TgConverter:
                     h, w = -1, 512
 
             await bash(
-                f'ffmpeg -i "{file}" -preset fast -an -to 00:00:03 -crf 30 -bufsize 256k -b:v {_["bitrate"]} -vf "scale={w}:{h},fps=30" -c:v libvpx-vp9 "{name}" -y'
+                f'ffmpeg -i {shquote(file)} -preset fast -an -to 00:00:03 -crf 30 -bufsize 256k -b:v {_["bitrate"]} -vf "scale={w}:{h},fps=30" -c:v libvpx-vp9 {shquote(name)} -y'
             )
 
             if remove and os.path.exists(file):
@@ -1113,7 +1101,6 @@ def get_chat_and_msgid(link):
 
 __all__ = (
     "Carbon",
-    "Catbox",
     "LogoHelper",
     "TgConverter",
     "TelegraphClient",
@@ -1134,7 +1121,6 @@ __all__ = (
     "saavn_search",
     "safe_load",
     "set_attributes",
-    # "telegraph_client",
     "text_set",
     "translate",
     "webuploader",

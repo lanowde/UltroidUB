@@ -126,7 +126,7 @@ async def inlone_paste(event):
     ok = event.text.split("-")[1]
     if not ok.startswith("http"):
         link = f"https://spaceb.in/{ok}"
-        raw = f"https://spaceb.in/api/v1/documents/{ok}/raw"
+        raw = f"https://spaceb.in/{ok}/raw"
     else:
         link = ok
         raw = f"{splitext(ok)[0]}/raw"

@@ -3,6 +3,8 @@
 import asyncio
 from ast import literal_eval
 from functools import wraps
+from io import BytesIO
+import mimetypes
 from pathlib import Path
 from random import choice, randrange
 from shlex import split as shsplit
@@ -25,7 +27,14 @@ from .commons import (
     not_so_fast,
     osremove,
     random_string,
+    run_async,
+    string_is_url,
 )
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 
 # scheduler
@@ -119,6 +128,73 @@ async def get_imgbb_link(path, url=None, **kwargs):
         except Exception as exc:
             LOGS.warning("ImgBB preview error:", exc_info=True)
     return flink
+
+
+@run_async
+def Catbox(
+    file,
+    temp=False,
+    time=None,
+    file_name=None,
+    mime_type=None,
+):
+    """
+    Upload file to Catbox (permanent) or Litterbox (temporary)
+
+    file: Path to the file or BytesIO object or URL of a file.
+    temp: Whether file should be Uploaded Permanently (catbox vs litterbox).
+
+    * Optional kwargs *
+    file_name: Name of the file with extension (required for URL upload).
+    mime_type: Mime type of file (required for URL upload)
+    time: Duration for which the file will be available. (only for temp mode, options - '1h', '12h', '24h', '72h', '1w').
+
+    returns URL of the uploaded file.
+    """
+
+    if not requests:
+        raise Exception(f"'requests' package is missing, can't upload to Catbox!")
+
+    api = (
+        "https://litterbox.catbox.moe/resources/internals/api.php"
+        if temp
+        else "https://catbox.moe/user/api.php"
+    )
+
+    try:
+        path = Path(file)
+    except TypeError:
+        path = None
+
+    data = {"reqtype": "fileupload"}
+    if path and path.is_file():
+        with open(file, "rb") as f:
+            content = f.read()
+        mime_type = mimetypes.guess_type(file)[0]
+        files = {"fileToUpload": (path.name, content, mime_type)}
+    elif isinstance(file, BytesIO):
+        if not (file_name and mime_type):
+            raise ValueError(
+                "Provide 'file_name' and 'mime_type' in arguments for this to work."
+            )
+
+        mime_type = mime_type or "application/octet-stream"
+        files = {"fileToUpload": (file_name, file, mime_type)}
+    elif string_is_url(file):
+        data.update({"reqtype": "urlupload", "url": file})
+    else:
+        raise TypeError(
+            f"File type Unsupported: {type(file)}, need a URL or filepath to upload to Catbox!"
+        )
+
+    if temp:
+        data["time"] = time or "1h"
+
+    if api_key := udB.get_key("CATBOX_API"):
+        data["userhash"] = api_key
+
+    response = requests.post(api, files=files, data=data, timeout=60)
+    return response.text.strip()
 
 
 RaySoThemes = (
@@ -284,6 +360,7 @@ class unix_parser:
 
 
 __all__ = (
+    "Catbox",
     "timeit",
     "cleargif",
     "osremove",
