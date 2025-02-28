@@ -115,7 +115,7 @@ async def async_searcher(
 ):
     method = "POST" if post else method.upper()
 
-    if aiohttp:
+    if False:  # no aiohttp.
         if timeout:
             timeout = aiohttp.ClientTimeout(total=int(timeout))
         async with aiohttp.ClientSession(headers=headers) as client:
