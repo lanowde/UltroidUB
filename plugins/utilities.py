@@ -261,7 +261,7 @@ async def _(event):
             "`Reply to a Message/Document or Give me Some Text !`", time=5
         )
 
-    done, data = await get_paste(message, extension=ext)
+    done, data = await get_paste(message, extension=ext[1:] if ext else "txt")
     if not done and data.get("error"):
         return await xx.eor(f"Something Went Wrong! `{data['error']}`")
     link = data["link"]

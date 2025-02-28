@@ -391,7 +391,7 @@ async def get_paste(data: str, extension: str = "txt"):
             re_json=True,
         )
         key = res["payload"]["id"]
-        _ext = "" if extension == "txt" else f".{extension}"
+        _ext = "" if not extension or extension == "txt" else f".{extension}"
         return True, {
             "link": f"https://spaceb.in/{key}{_ext}",
             "raw": f"https://spaceb.in/{key}/raw",
