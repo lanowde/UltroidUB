@@ -53,7 +53,6 @@ speechrecognition  # stt
 speedtest-cli
 textblob  # spellcheck
 wikipedia
-catbox-uploader  # replacement for Telegraph!
 cloudscraper  # for sticker search
 
 # custom

@@ -128,7 +128,7 @@ class MongoExtras:
     def keys(self, clus):
         return self.db[clus].list_collection_names()
 
-    def get(cls, clus, key):
+    def get(self, clus, key):
         if x := self.db[clus][key].find_one({"_id": key}):
             return x["value"]
 
