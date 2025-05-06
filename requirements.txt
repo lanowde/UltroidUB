@@ -1,6 +1,5 @@
 # Important Requirements here.
 https://github.com/lanowde/telethon/archive/main.zip
-# https://github.com/lanowde/telethon-patch/archive/main.zip
 python-decouple
 python-dotenv
 
@@ -56,7 +55,8 @@ wikipedia
 cloudscraper  # for sticker search
 
 # custom
-https://github.com/PyrogramMod/PyrogramMod/archive/refs/heads/main.zip
+# https://github.com/PyrogramMod/PyrogramMod/archive/refs/heads/main.zip
+https://github.com/KurimuzonAkuma/pyrogram/archive/dev.zip
 pymediainfo
 aiofiles
 music_tag

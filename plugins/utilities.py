@@ -58,6 +58,7 @@ import os
 import pathlib
 import time
 from datetime import datetime as dt
+from shlex import quote as shquote
 
 from telethon.utils import get_peer_id
 from telethon.errors.rpcerrorlist import ChatForwardsRestrictedError, UserBotError
@@ -502,9 +503,10 @@ async def telegraphcmd(event):
             getit = file
         elif dar.endswith("animated"):
             file = f"{getit}.gif"
-            await bash(f"lottie_convert.py '{getit}' {file}")
+            await bash(f"lottie_convert.py {shquote(getit)} {file}")
             osremove(getit)
             getit = file
+
         if "document" not in dar:
             try:
                 nn = await Catbox(getit)
