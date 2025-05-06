@@ -243,7 +243,8 @@ class PyroTGLogHandler(StreamHandler):
             no_updates=True,
             # in_memory=True,
             max_concurrent_transmissions=1,
-            message_cache=16,
+            max_message_cache_size=8,  # kurigram
+            max_topic_cache_size=8,
         )
         await self.app.start()
         from pyUltroid import _shutdown_tasks

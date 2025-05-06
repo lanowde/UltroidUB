@@ -32,11 +32,12 @@ _default_client_values = {
     "api_id": Var.API_ID,
     "api_hash": Var.API_HASH,
     "workdir": "resources/auth/",
-    "sleep_threshold": 180,
+    "sleep_threshold": 300,
     "workers": _workers,
     "no_updates": True,
     "max_concurrent_transmissions": 1,
-    "message_cache": 256,
+    "max_message_cache_size": 512,  # kurigram
+    "max_topic_cache_size": 128,
 }
 
 
