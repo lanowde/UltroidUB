@@ -188,6 +188,7 @@ class TGLogHandlerBotAPI(StreamHandler):
 
 class PyroTGLogHandler(StreamHandler):
     __slots__ = (
+        "ReplyParameters",
         "app",
         "chat",
         "log_db",
@@ -206,13 +207,7 @@ class PyroTGLogHandler(StreamHandler):
         self.is_active = False
         self._floodwait = False
         self.sent_as_file = False
-        _PAYLOAD.update(
-            {
-                "chat_id": chat,
-                "disable_web_page_preview": True,
-                "disable_notification": True,
-            }
-        )
+        _PAYLOAD.update({"chat_id": chat, "disable_notification": True})
         self.initializer(bot_token=token)
         StreamHandler.__init__(self)
 
@@ -222,16 +217,27 @@ class PyroTGLogHandler(StreamHandler):
         print("Starting TGLogger Pyrogram Client!")
         loop.run_until_complete(self.client_startup(bot_token))
 
+    def _post_startup_tasks(self):
+        from pyrogram.types import LinkPreviewOptions, ReplyParameters
+        from pyrogram.enums import ParseMode
+
+        self.ReplyParameters = ReplyParameters
+        _PAYLOAD.update(
+            {
+                "parse_mode": ParseMode.HTML,
+                "link_preview_options": LinkPreviewOptions(is_disabled=True),
+            }
+        )
+
     async def client_startup(self, bot_token):
         try:
             from pyrogram import Client
-            from pyrogram.enums import ParseMode
         except ImportError:
             print("Install 'pyrogram' to use PyroTGLogger :)")
             quit(0)
 
         __import__("os").makedirs("resources/auth", exist_ok=True)
-        _PAYLOAD["parse_mode"] = ParseMode.HTML
+
         self.app = Client(
             name="pyro_tglogger",
             api_id=6,
@@ -250,6 +256,7 @@ class PyroTGLogHandler(StreamHandler):
         from pyUltroid import _shutdown_tasks
 
         _shutdown_tasks.append(self.app.stop())
+        self._post_startup_tasks()
 
     async def _tg_logger(self):
         try:
@@ -314,8 +321,15 @@ class PyroTGLogHandler(StreamHandler):
 
     async def send_message(self, message):
         payload = _PAYLOAD.copy()
-        payload["reply_to_message_id"] = getattr(self, "message_id", None)
-        payload["text"] = PyroTGLogHandler._filter_text(message)
+
+        payload.update(
+            {
+                "reply_parameters": self.ReplyParameters(
+                    message_id=getattr(self, "message_id", None)
+                ),
+                "text": PyroTGLogHandler._filter_text(message),
+            }
+        )
         try:
             msg = await self.app.send_message(**payload)
         except Exception as exc:
@@ -342,8 +356,10 @@ class PyroTGLogHandler(StreamHandler):
     async def send_file(self, logs):
         payload = _PAYLOAD.copy()
         payload["caption"] = "Too much logs, hence sending as File."
-        payload["reply_to_message_id"] = getattr(self, "message_id", None)
-        payload.pop("disable_web_page_preview", None)
+        if msg_id := getattr(self, "message_id", None):
+            payload["reply_parameters"] = self.ReplyParameters(message_id=msg_id)
+
+        payload.pop("link_preview_options", None)
         file = BytesIO(logs.lstrip().encode())
         file.name = "tglogging.txt"
         payload["document"] = file
