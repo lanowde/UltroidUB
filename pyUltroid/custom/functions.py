@@ -37,19 +37,20 @@ except ImportError:
     requests = None
 
 
-# scheduler
-def init_scheduler():
+scheduler = False
+
+
+# get apscheduler instance
+async def _init_scheduler():
+    global scheduler
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
     except ImportError:
-        return None
+        scheduler = None
+        return
 
-    schd = AsyncIOScheduler(timezone="Asia/Kolkata")
-    schd.start()
-    return schd
-
-
-scheduler = init_scheduler()
+    scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
+    scheduler.start()
 
 
 # https://gist.github.com/DougAF/ef88f89d1d99763bb05afd81285ef233#file-timer-py

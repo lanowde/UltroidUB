@@ -5,17 +5,21 @@
 # PLease read the GNU Affero General Public License in
 # <https://github.com/TeamUltroid/pyUltroid/blob/main/LICENSE>.
 
+
 import time
 
+
 start_time = time.time()
+_ignore_eval = []
+_shutdown_tasks = []
+_ult_cache = {}
+
 
 try:
     import telethonpatch as _telepatch
 except ImportError:
     # print("running without telethonpatch >>>")
     pass
-
-_shutdown_tasks = []
 
 
 from .version import __version__, ultroid_version
@@ -28,9 +32,6 @@ class ULTConfig:
     lang = "en"
     thumb = "resources/extras/ultroid.jpg"
 
-
-_ult_cache = {}
-_ignore_eval = []
 
 # database stuff
 from .startup._database import _UltroidDB

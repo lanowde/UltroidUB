@@ -48,7 +48,13 @@ def main():
     if not ultroid_bot.me.bot:
         udB.set_key("OWNER_ID", ultroid_bot.uid)
 
+    # check asst bot
     ultroid_bot.run_in_loop(autopilot())
+
+    # start scheduler object
+    from .custom.functions import _init_scheduler
+
+    ultroid_bot.run_in_loop(_init_scheduler())
 
     # Starting Pyrogram Clients..
     ultroid_bot.run_in_loop(_init_pyrog())
@@ -112,6 +118,7 @@ async def init_shutdown():
         _shutdown_tasks.append(ultroid_bot.disconnect())
     if vcClient.uid != ultroid_bot.uid and vcClient.is_connected():
         _shutdown_tasks.append(vcClient.disconnect())
+
     if not BOT_MODE:
         msg1, msg2 = (
             ("#restart", "Restarting Ultroid Bot.")
@@ -128,11 +135,11 @@ async def init_shutdown():
         finally:
             _shutdown_tasks.append(asst.disconnect())
 
-    await asyncio.sleep(6)
+    await asyncio.sleep(5)
     for task in split_list(_shutdown_tasks, 3):
         await asyncio.gather(*task, return_exceptions=True)
     sys.stdout.flush()
-    await asyncio.sleep(4)
+    await asyncio.sleep(5)
     out = await asyncio.gather(
         loop.shutdown_asyncgens(),
         loop.shutdown_default_executor(),
@@ -161,5 +168,5 @@ if __name__ == "__main__":
     finally:
         LOGS.info("Stopping Ultroid..")
         loop.run_until_complete(init_shutdown())
-        loop.stop()
+        loop.close()
         shutdown_or_restart()

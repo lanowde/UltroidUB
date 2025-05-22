@@ -39,7 +39,7 @@ youtube-search-python
 yt-dlp
 
 # addons
-covid
+# covid
 emoji
 fonttools  # qbot
 gtts
