@@ -362,7 +362,7 @@ async def run_eval(event):
         # value = await aexec(cmd, event)
         process_id = f"{event.chat_id}_" + f"{xx.id}" if xx else random_string(12)
         tima = time.perf_counter()
-        task = asyncio.create_task(aexec(cmd, event))
+        task = asyncio.create_task(AsyncExecHelper(cmd, event).run())
         # we must keep a reference of the asyncio Task
         _EVAL_TASKS[process_id] = task
         task.add_done_callback(lambda _: _EVAL_TASKS.pop(process_id, None))
@@ -548,21 +548,35 @@ def _stringify(text=None, *args, **kwargs):
     return print(text, *args, **kwargs)
 
 
-async def aexec(code, event):
-    exec(
-        (
-            "async def __aexec(e, client): "
-            + "\n from builtins import print as ppp"
-            + "\n\n print = p = _stringify"
-            + "\n message = event = e"
-            + "\n reply = rm = await event.get_reply_message()"
-            + "\n chat = event.chat_id"
-            # + "\n u.lr = locals()"
-        )
-        + "".join(f"\n {l}" for l in code.split("\n"))
-    )
+class AsyncExecHelper:
+    __slots__ = ("code", "event", "locals")
 
-    return await locals()["__aexec"](event, event.client)
+    def __init__(self, code, event):
+        self.code = code
+        self.event = event
+
+    async def run(self):
+        kwargs = {}
+        if sys.version_info >= (3, 13):
+            self.locals = locals()  # python 3.13+ locals() already returns a snapshot
+            kwargs = {"locals": self.locals}
+
+        exec(
+            (
+                "async def __aexec(e, client): "
+                + "\n from builtins import print as ppp"
+                + "\n\n print = p = _stringify"
+                + "\n message = event = e"
+                + "\n reply = rm = await event.get_reply_message()"
+                + "\n chat = event.chat_id"
+                # + "\n u.lr = locals()"
+            )
+            + "".join(f"\n {l}" for l in self.code.split("\n")),
+            **kwargs,
+        )
+
+        _locals = self.locals if sys.version_info >= (3, 13) else locals()
+        return await _locals["__aexec"](self.event, self.event.client)
 
 
 DUMMY_CPP = """#include <iostream>
