@@ -87,7 +87,11 @@ async def _log_sudo_commands(ult, chat, out_chat):
         await not_so_fast(
             asst.send_message,
             out_chat,
-            fmt_msg, buttons=btns, sleep=5, parse_mode="html", link_preview=False,
+            fmt_msg,
+            buttons=btns,
+            sleep=5,
+            parse_mode="html",
+            link_preview=False,
         )
     except Exception as exc:
         LOGS.exception(f"Error while logging sudo commands: {exc}")
