@@ -59,6 +59,7 @@ cloudscraper  # for sticker search
 https://github.com/KurimuzonAkuma/pyrogram/archive/dev.zip
 pymediainfo
 aiofiles
+isal  # fast gzip for telethon
 music_tag
 uvloop
 g4f

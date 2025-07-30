@@ -224,8 +224,6 @@ async def run_bash(event):
         OUT += f"{emojis[1]} <b>OUTPUT:</b>\n"
         OUT += u._html(get_string("instu_4"), "")
     await xx.edit(OUT, parse_mode="html", link_preview=bool(_url))
-    if not nolog:
-        await u._evalogger(cmd, event, "bash")
 
 
 pp = __import__("pprint").pprint  # ignore: pylint
@@ -510,8 +508,6 @@ async def run_eval(event):
         )
 
     await xx.edit(final_output, parse_mode="html", link_preview=bool(_url))
-    if mode != "nolog":
-        await u._evalogger(cmd, event, "python")
 
 
 @ultroid_cmd(

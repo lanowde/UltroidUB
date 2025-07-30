@@ -82,8 +82,8 @@ async def _log_sudo_commands(ult, chat, out_chat):
     try:
         await asyncio.sleep(3)
         sender = get_display_name(ult.sender or await ult.get_sender())
-        fmt_msg = f"<b>#bot Command Executed by {sender}</b> [<code>{ult.sender_id}</code>]\n\n>> {ult.text[:4000]}"
-        btns = [Button.url(get_display_name(chat), url=ult.message_link)]
+        fmt_msg = f"<b>#bot Command Executed by {sender}</b> [<code>{ult.sender_id}</code>]\n\n>>  {ult.text[:4000]}"
+        btns = [Button.url(get_display_name(chat)[:64], url=ult.message_link)]
         await not_so_fast(
             asst.send_message,
             out_chat,

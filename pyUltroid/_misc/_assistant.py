@@ -110,7 +110,8 @@ def callback(data=None, from_users=[], admins=False, owner=False, **kwargs):
 
 async def _inline_logger(event, out_chat):
     try:
-        fmt_msg = f"#inline triggered by <code>{event.sender_id}</code>\n>> {event.text[:4000]}"
+        page = int(event.query.offset or 0) + 1
+        fmt_msg = f"#inline triggered by <code>{event.sender_id}</code>; [Page: {page}]\n>>  {event.text[:4000]}"
         await not_so_fast(
             asst.send_message,
             out_chat,
