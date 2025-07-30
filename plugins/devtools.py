@@ -65,6 +65,7 @@ async def neo_fetch(e):
 
 class u:
     _ = ""
+    _eval_logger_format = "<b><blockquote>CMD Executed!</blockquote></b> \n\n{0}\n\n–  {1}:  {2} \n–  <a href='{3}'>{4}</a>"
 
     @staticmethod
     def _html(text, language):
@@ -95,11 +96,11 @@ class u:
     async def _evalogger(cmd, e, format_lang):
         if not TAG_LOG:
             return
+
         await asyncio.sleep(3)
-        msg = "<b><blockquote>CMD Executed!</blockquote></b> \n\n{0}\n\n–  {1}:  {2} \n–  <a href='{3}'>{4}</a>"
         sndr = e.client.me if e.out else (e.sender or await e.get_sender())
         try:
-            _msg = msg.format(
+            _msg = u._eval_logger_format.format(
                 u._html(cmd, format_lang),
                 get_display_name(sndr),
                 inline_mention(sndr, custom=sndr.id, html=True),

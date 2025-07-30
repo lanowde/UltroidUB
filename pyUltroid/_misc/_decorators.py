@@ -44,7 +44,7 @@ from strings import get_string
 from pyUltroid.dB import DEVLIST
 from pyUltroid.dB._core import LIST, LOADED
 from pyUltroid.fns.admins import admin_check
-from pyUltroid.custom.commons import bash, time_formatter as tf
+from pyUltroid.custom.commons import bash, not_so_fast, time_formatter as tf
 from pyUltroid.exceptions import DependencyMissingError
 from pyUltroid.version import __version__ as pyver, ultroid_version as ult_ver
 from . import SUDO_M, owner_and_sudos
@@ -76,6 +76,21 @@ def _add_func_to_loaded(func, file):
             LOADED[file.stem].append(func)
         except KeyError:
             LOADED[file.stem] = [func]
+
+
+async def _log_sudo_commands(ult, chat, out_chat):
+    try:
+        await asyncio.sleep(3)
+        sender = get_display_name(ult.sender or await ult.get_sender())
+        fmt_msg = f"<b>#bot Command Executed by {sender}</b> [<code>{ult.sender_id}</code>]\n\n>> {ult.text[:4000]}"
+        btns = [Button.url(get_display_name(chat), url=ult.message_link)]
+        await not_so_fast(
+            asst.send_message,
+            out_chat,
+            fmt_msg, buttons=btns, sleep=5, parse_mode="html", link_preview=False,
+        )
+    except Exception as exc:
+        LOGS.exception(f"Error while logging sudo commands: {exc}")
 
 
 def ultroid_cmd(
@@ -118,6 +133,8 @@ def ultroid_cmd(
 
             chat = ult.chat
 
+            """
+            # not necessary; just makes bot slow!
             if not ult.is_private and hasattr(chat, "title"):
                 if (
                     "#noub" in chat.title.lower()
@@ -125,6 +142,7 @@ def ultroid_cmd(
                     and not (ult.sender_id in DEVLIST)
                 ):
                     return
+            """
 
             if ult.is_private and (groups_only or admins_only):
                 return await eod(ult, get_string("py_d3"))
@@ -140,7 +158,7 @@ def ultroid_cmd(
                     f"`FloodWaitError:\n{str(fwerr)}\n\nBot Sleeping for {tf((fwerr.seconds + 15) * 1000)}`",
                 )
                 # await ultroid_bot.disconnect()
-                sleep(fwerr.seconds + 15)
+                sleep(fwerr.seconds + 20)
                 # await ultroid_bot.connect()
                 await client.send_message(
                     udB.get_key("LOG_CHANNEL"),
@@ -154,10 +172,7 @@ def ultroid_cmd(
             except (BotMethodInvalidError, UserIsBotError):
                 return await eod(ult, get_string("py_d6"))
             except AlreadyInConversationError:
-                return await eod(
-                    ult,
-                    get_string("py_d7"),
-                )
+                return await eod(ult, get_string("py_d7"))
             except (BotInlineDisabledError, DependencyMissingError) as er:
                 return await eod(ult, f"`{er}`")
             except (
@@ -231,6 +246,9 @@ def ultroid_cmd(
                         link_preview=False,
                         parse_mode="html",
                     )
+            finally:
+                if not ult.out and (out_chat := udB.get_key("LOG_SUDO_COMMANDS")):
+                    await _log_sudo_commands(ult, chat, out_chat)
 
         cmd = None
         blacklist_chats = False

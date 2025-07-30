@@ -22,6 +22,7 @@ resources/extras/thumbnail.jpg
 # Directories
 resources/auth
 resources/temp
+resources/extras
 resources/downloads
 .ruff_cache/
 __ignore__

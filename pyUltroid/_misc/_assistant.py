@@ -19,6 +19,7 @@ from telethon.tl.types import InputWebDocument
 
 from pyUltroid import LOGS, asst, udB, ultroid_bot
 from pyUltroid.dB._core import LOADED
+from pyUltroid.custom.commons import not_so_fast
 from pyUltroid.fns.admins import admin_check
 from . import SUDO_M, append_or_update, owner_and_sudos
 
@@ -107,6 +108,18 @@ def callback(data=None, from_users=[], admins=False, owner=False, **kwargs):
     return callback_wrap
 
 
+async def _inline_logger(event, out_chat):
+    try:
+        fmt_msg = f"#inline triggered by <code>{event.sender_id}</code>\n>> {event.text[:4000]}"
+        await not_so_fast(
+            asst.send_message,
+            out_chat,
+            fmt_msg, sleep=5, parse_mode="html", link_preview=False,
+        )
+    except Exception as exc:
+        LOGS.exception(f"Error while logging inline commands: {exc}")
+
+
 # inline decorator for assistant
 def in_pattern(pattern=None, owner=False, **kwargs):
     """Assistant's inline decorator."""
@@ -163,6 +176,9 @@ def in_pattern(pattern=None, owner=False, **kwargs):
                 except Exception as er:
                     LOGS.exception(er)
                     await asst.send_message(udB.get_key("LOG_CHANNEL"), error_text())
+            finally:
+                if out_chat := udB.get_key("LOG_INLINE_COMMANDS"):
+                    await _inline_logger(event, out_chat)
 
         asst.add_event_handler(inline_wrapper, InlineQuery(pattern=pattern, **kwargs))
 
