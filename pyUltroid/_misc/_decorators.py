@@ -78,7 +78,7 @@ def _add_func_to_loaded(func, file):
             LOADED[file.stem] = [func]
 
 
-async def _log_sudo_commands(ult, chat, out_chat):
+async def _log_commands(ult, chat, out_chat):
     try:
         await asyncio.sleep(3)
         sender = get_display_name(ult.sender or await ult.get_sender())
@@ -251,8 +251,8 @@ def ultroid_cmd(
                         parse_mode="html",
                     )
             finally:
-                if not ult.out and (out_chat := udB.get_key("LOG_SUDO_COMMANDS")):
-                    await _log_sudo_commands(ult, chat, out_chat)
+                if out_chat := udB.get_key("LOG_COMMANDS"):
+                    await _log_commands(ult, chat, out_chat)
 
         cmd = None
         blacklist_chats = False
