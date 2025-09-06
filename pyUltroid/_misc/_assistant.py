@@ -74,20 +74,21 @@ def asst_cmd(pattern=None, load=None, owner=False, **kwargs):
 # logger for callback query events
 async def _callback_logger(event, out_chat):
     try:
-        if isinstance(event.peer, PeerChannel):
-            chat_id = getattr(event.peer, "channel_id", 0)
-        elif isintance(event.peer, PeerUser):
-            chat_id = getattr(event.peer, "user_id", 0)
-        elif isinstance(event.peer, PeerChat):
-            chat_id = getattr(event.peer, "chat_id", 0)
+        equery = event.query
+        if isinstance(equery.peer, PeerChannel):
+            chat_id = getattr(equery.peer, "channel_id", 0)
+        elif isintance(equery.peer, PeerUser):
+            chat_id = getattr(equery.peer, "user_id", 0)
+        elif isinstance(equery.peer, PeerChat):
+            chat_id = getattr(equery.peer, "chat_id", 0)
         else:
             chat_id = 0  # should not happen
 
-        fmt_msg = f"<b>#callback query event clicked by</b> <code>{event.user_id}</code>\n\n>>  {event.data.decode()}"
+        fmt_msg = f"<b>#callback query event clicked by</b> <code>{equery.user_id}</code>\n\n>>  {equery.data.decode()}"
         btns = [
             Button.url(
                 "message link! <unreliable>",
-                url=f"https://t.me/c/{chat_id}/{event.msg_id}",
+                url=f"https://t.me/c/{chat_id}/{equery.msg_id}",
             )
         ]
         await not_so_fast(
