@@ -15,7 +15,7 @@ from traceback import format_exc
 from telethon import Button
 from telethon.errors import QueryIdInvalidError, ResultIdDuplicateError
 from telethon.events import CallbackQuery, InlineQuery, NewMessage
-from telethon.tl.types import InputWebDocument
+from telethon.tl.types import InputWebDocument, PeerChat, PeerChannel, PeerUser
 
 from pyUltroid import LOGS, asst, udB, ultroid_bot
 from pyUltroid.dB._core import LOADED
@@ -71,6 +71,37 @@ def asst_cmd(pattern=None, load=None, owner=False, **kwargs):
     return asstcmd_wrap
 
 
+# logger for callback query events
+async def _callback_logger(event, out_chat):
+    try:
+        if isinstance(event.peer, PeerChannel):
+            chat_id = getattr(event.peer, "channel_id", 0)
+        elif isintance(event.peer, PeerUser):
+            chat_id = getattr(event.peer, "user_id", 0)
+        elif isinstance(event.peer, PeerChat):
+            chat_id = getattr(event.peer, "chat_id", 0)
+        else:
+            chat_id = 0  # should not happen
+
+        fmt_msg = f"<b>#callback query event clicked by</b> <code>{event.user_id}</code>\n\n>>  {event.data.decode()}"
+        btns = [
+            Button.url(
+                "message link! <unreliable>",
+                url=f"https://t.me/c/{chat_id}/{event.msg_id}",
+            )
+        ]
+        await not_so_fast(
+            asst.send_message,
+            out_chat,
+            fmt_msg,
+            sleep=6.5,
+            parse_mode="html",
+            link_preview=False,
+        )
+    except Exception as exc:
+        LOGS.exception(f"Error while logging callback event: {exc}")
+
+
 # callback decorator for assistant
 def callback(data=None, from_users=[], admins=False, owner=False, **kwargs):
     """Assistant's callback decorator"""
@@ -94,6 +125,9 @@ def callback(data=None, from_users=[], admins=False, owner=False, **kwargs):
                 await func(event)
             except Exception as er:
                 LOGS.exception(er)
+            finally:
+                if out_chat := udB.get_key("LOG_CALLBACK_COMMANDS"):
+                    await _callback_logger(event, out_chat)
 
         asst.add_event_handler(callback_wrapper, CallbackQuery(data=data, **kwargs))
 
@@ -108,6 +142,7 @@ def callback(data=None, from_users=[], admins=False, owner=False, **kwargs):
     return callback_wrap
 
 
+# logger for inline events
 async def _inline_logger(event, out_chat):
     try:
         page = int(event.query.offset or 0) + 1
@@ -116,7 +151,7 @@ async def _inline_logger(event, out_chat):
             asst.send_message,
             out_chat,
             fmt_msg,
-            sleep=5,
+            sleep=6.5,
             parse_mode="html",
             link_preview=False,
         )

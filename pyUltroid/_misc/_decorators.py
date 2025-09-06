@@ -89,7 +89,7 @@ async def _log_commands(ult, chat, out_chat):
             out_chat,
             fmt_msg,
             buttons=btns,
-            sleep=5,
+            sleep=6,
             parse_mode="html",
             link_preview=False,
         )
