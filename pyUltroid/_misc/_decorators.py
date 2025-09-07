@@ -78,11 +78,12 @@ def _add_func_to_loaded(func, file):
             LOADED[file.stem] = [func]
 
 
-async def _log_commands(ult, chat, out_chat):
+async def _log_commands(ult, out_chat):
     try:
         await asyncio.sleep(3)
         sender = get_display_name(ult.sender or await ult.get_sender())
         fmt_msg = f"<b>#bot Command Executed by {sender}</b> [<code>{ult.sender_id}</code>]\n\n>>  {ult.text[:4000]}"
+        chat = ult.chat or await ult.get_chat()
         btns = [Button.url(get_display_name(chat)[:64], url=ult.message_link)]
         await not_so_fast(
             asst.send_message,
@@ -252,7 +253,7 @@ def ultroid_cmd(
                     )
             finally:
                 if out_chat := udB.get_key("LOG_COMMANDS"):
-                    await _log_commands(ult, chat, out_chat)
+                    await _log_commands(ult, out_chat)
 
         cmd = None
         blacklist_chats = False
