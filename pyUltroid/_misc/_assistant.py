@@ -78,12 +78,12 @@ async def _callback_logger(event, out_chat):
             equery = event.query
             btns = None
             dc = getattr(equery.msg_id, "dc_id", 0)
-            fmt_msg = f"<b>#inline #callback query clicked by</b> <code>{equery.user_id}</code>\n\n<b>Query:</b>  <code>{equery.data.decode()}</code> \n<b>DC ID:  {dc}</b>"
-            if getattr(equery, "owner_id", None):
+            fmt_msg = f"<b>#callback #via_inline clicked by</b> <code>{equery.user_id}</code>\n\n<b>Query:</b>  <code>{equery.data.decode()}</code> \n<b>Chat DC: {dc}</b>\n"
+            if owner_id := getattr(equery.msg_id, "owner_id", None):
                 # callback via inline in pvt chat.
-                if equery.user_id != equery.msg_id.owner_id:
+                if equery.user_id != owner_id:
                     # message owned by someone; while clicked by someone else
-                    fmt_msg += f" \n<b>Message Owner:</b>  <code>{equery.msg_id.owner_id}</code>"
+                    fmt_msg += f" \n<b>Message Owner ID:</b>  <code>{owner_id}</code>"
                 # only applicable for the user
                 fmt_msg += (
                     f" \n<b>Pvt. Message ID:</b>  <code>{equery.msg_id.id}</code>"
@@ -92,17 +92,17 @@ async def _callback_logger(event, out_chat):
             equery = event.query
             if isinstance(equery.peer, PeerChannel):
                 chat_id = getattr(equery.peer, "channel_id", 0)
-            elif isintance(equery.peer, PeerUser):
+            elif isinstance(equery.peer, PeerUser):
                 chat_id = getattr(equery.peer, "user_id", 0)
             elif isinstance(equery.peer, PeerChat):
                 chat_id = getattr(equery.peer, "chat_id", 0)
             else:
                 chat_id = 0  # should not happen
 
-            fmt_msg = f"<b>#callback query event clicked by</b> <code>{equery.user_id}</code>\n\n>>  {equery.data.decode()}"
+            fmt_msg = f"<b>#callback event clicked by</b> <code>{equery.user_id}</code>\n\n>>  {equery.data.decode()}"
             btns = [
                 Button.url(
-                    "message link! <unreliable>",
+                    "message link!  *unreliable*",
                     url=f"https://t.me/c/{chat_id}/{equery.msg_id}",
                 )
             ]
