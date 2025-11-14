@@ -73,7 +73,6 @@ else:
         app_version=ultroid_version,
         device_model="Ultroid",
         proxy=udB.get_key("TG_PROXY"),
-        entity_cache_limit=2500,
     )
     ultroid_bot.run_in_loop(_autobot(ultroid_bot, udB))
 
@@ -81,10 +80,9 @@ if USER_MODE:
     asst = ultroid_bot
 else:
     asst = _UltroidClient(
-        None,
+        "asst" if HOSTED_ON == "termux" else None,
         bot_token=udB.get_key("BOT_TOKEN") or Var.BOT_TOKEN,
         udB=udB,
-        entity_cache_limit=500,
     )
 
 if BOT_MODE:

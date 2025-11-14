@@ -1,8 +1,6 @@
 import os
 from random import randrange
 
-from redis.exceptions import ConnectionError, TimeoutError
-
 from pyUltroid import udB, Var
 from pyUltroid.startup import HOSTED_ON, LOGS
 from pyUltroid.startup._database import MongoDB, RedisDB, SqlDB
@@ -27,6 +25,11 @@ def _connect_single_db(data, type, petname, cache):
             return LOGS.debug("", exc_info=True)
 
     else:
+        try:
+            from redis.exceptions import ConnectionError, TimeoutError
+        except ImportError:
+            pass
+
         name = "Redis: " + petname
         stuff = data.split()
         try:

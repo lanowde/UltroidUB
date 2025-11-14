@@ -37,14 +37,14 @@ def where_hosted():
         return "railway"
     elif environ.get("OKTETO_TOKEN"):
         return "okteto"
+    elif environ.get("ANDROID_ROOT"):
+        return "termux"
     elif environ.get("RUNNER_USER") or environ.get("HOSTNAME"):
         if environ.get("USER") == "codespace":
             return "codespace"
         return "github actions"
     elif environ.get("KUBERNETES_PORT"):
         return "qovery | kubernetes"
-    elif environ.get("ANDROID_ROOT"):
-        return "termux"
     elif environ.get("FLY_APP_NAME"):
         return "fly.io"
     return "local"

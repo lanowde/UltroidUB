@@ -80,7 +80,7 @@ def _add_func_to_loaded(func, file):
 
 async def _log_commands(ult, out_chat):
     try:
-        await asyncio.sleep(3)
+        await asyncio.sleep(1.5)
         sender = get_display_name(ult.sender or await ult.get_sender())
         fmt_msg = f"<b>#bot Command Executed by {sender}</b> [<code>{ult.sender_id}</code>]\n\n>>  {ult.text[:4000]}"
         chat = ult.chat or await ult.get_chat()
