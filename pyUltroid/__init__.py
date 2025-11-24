@@ -68,7 +68,7 @@ if BOT_MODE:
         quit(1)
 else:
     ultroid_bot = _UltroidClient(
-        _init_session(ub=True),
+        _init_session(udB, ub=True),
         udB=udB,
         app_version=ultroid_version,
         device_model="Ultroid",
@@ -81,7 +81,7 @@ if USER_MODE:
     asst = ultroid_bot
 else:
     asst = _UltroidClient(
-        _init_session(asst=True),
+        _init_session(udB, asst=True),
         bot_token=udB.get_key("BOT_TOKEN") or Var.BOT_TOKEN,
         udB=udB,
         entity_cache_limit=50000,

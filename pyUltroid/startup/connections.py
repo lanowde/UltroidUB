@@ -121,7 +121,7 @@ def connect_ub(s):
             LOGS.exception("Error while creating new Client.")
 
 
-def init_session(ub=False, asst=False):
+def init_session(udB, ub=False, asst=False):
     key = udB.get_key("_PREFER_ASYNC_SQLITE")
     if ub:
         return (
