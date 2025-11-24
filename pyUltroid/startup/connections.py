@@ -19,6 +19,11 @@ from strings import get_string
 from pyUltroid.configs import Var
 from . import *
 
+try:
+    from telethon.sessions.asqlite import AsyncSQLite
+except ImportError:
+    AsyncSQLite = None
+
 
 _PYRO_FORM = {351: ">B?256sI?", 356: ">B?256sQ?", 362: ">BI?256sQ?"}
 
@@ -114,3 +119,19 @@ def connect_ub(s):
             return er
         except Exception as er:
             LOGS.exception("Error while creating new Client.")
+
+
+def init_session(ub=False, asst=False):
+    key = udB.get_key("_PREFER_ASYNC_SQLITE")
+    if ub:
+        return (
+            AsyncSQLite(key)
+            if key and AsyncSQLite and HOSTED_ON == "termux"
+            else validate_session(Var.SESSION, LOGS)
+        )
+    elif asst:
+        return (
+            AsyncSQLite("asst")
+            if key and AsyncSQLite and HOSTED_ON == "termux"
+            else None
+        )

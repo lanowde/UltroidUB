@@ -44,7 +44,7 @@ from .custom.init import afterBoot as _afterBoot
 from .startup.BaseClient import UltroidClient as _UltroidClient
 from .startup.connections import (
     validate_session as _validate_session,
-    vc_connection as _vc_connection,
+    init_session as _init_session,
 )
 from .startup.funcs import _autobot, _enable_inline
 
@@ -68,7 +68,7 @@ if BOT_MODE:
         quit(1)
 else:
     ultroid_bot = _UltroidClient(
-        _validate_session(Var.SESSION, LOGS),
+        _init_session(ub=True),
         udB=udB,
         app_version=ultroid_version,
         device_model="Ultroid",
@@ -80,7 +80,7 @@ if USER_MODE:
     asst = ultroid_bot
 else:
     asst = _UltroidClient(
-        "asst" if HOSTED_ON == "termux" else None,
+        _init_session(asst=True),
         bot_token=udB.get_key("BOT_TOKEN") or Var.BOT_TOKEN,
         udB=udB,
     )

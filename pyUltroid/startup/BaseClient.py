@@ -31,6 +31,11 @@ from pyUltroid.exceptions import DownloadError, UploadError
 from pyUltroid.custom.FastTelethon import download_file, upload_file
 from pyUltroid.custom.commons import progress, check_filename, get_tg_filename
 
+try:
+    from telethon.sessions.asqlite import AsyncSQLite
+except ImportError:
+    AsyncSQLite = None
+
 
 class UltroidClient(TelegramClient):
     def __init__(
@@ -73,6 +78,12 @@ class UltroidClient(TelegramClient):
             self.logger.info("Trying to login.")
 
         try:
+            if (
+                AsyncSQLite
+                and isinstance(self.session, AsyncSQLite)
+                and self.udB.get_key("_PREFER_ASYNC_SQLITE")
+            ):
+                await self.session._init()
             await self.start(**kwargs)
         except ApiIdInvalidError:
             self.logger.critical("API ID and API_HASH combination does not match!")
