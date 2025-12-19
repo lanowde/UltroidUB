@@ -43,6 +43,7 @@ LOGS.info(f"Connected to {udB.name} Successfully!")
 from .custom.init import afterBoot as _afterBoot
 from .startup.BaseClient import UltroidClient as _UltroidClient
 from .startup.connections import (
+    vc_connection as _vc_connection,
     validate_session as _validate_session,
     init_session as _init_session,
 )
@@ -67,24 +68,26 @@ if BOT_MODE:
         LOGS.critical('"BOT_TOKEN" not Found! Please add it, in order to use "BOTMODE"')
         quit(1)
 else:
+    _session = _init_session(udB, ub=True)
     ultroid_bot = _UltroidClient(
-        _init_session(udB, ub=True),
+        _session,
         udB=udB,
         app_version=ultroid_version,
         device_model="Ultroid",
         proxy=udB.get_key("TG_PROXY"),
-        entity_cache_limit=50000,
+        entity_cache_limit=25000,
     )
     ultroid_bot.run_in_loop(_autobot(ultroid_bot, udB))
 
 if USER_MODE:
     asst = ultroid_bot
 else:
+    _session = _init_session(udB, asst=True)
     asst = _UltroidClient(
-        _init_session(udB, asst=True),
+        _session,
         bot_token=udB.get_key("BOT_TOKEN") or Var.BOT_TOKEN,
         udB=udB,
-        entity_cache_limit=50000,
+        entity_cache_limit=25000,
     )
 
 if BOT_MODE:

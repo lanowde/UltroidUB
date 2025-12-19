@@ -199,7 +199,7 @@ async def uploamder(event):
             for files in get_all_files(result):
                 if os.path.getsize(files) == 0:
                     c += 1
-                    await msg.edit(f"`file size is 0B..`\n`{files}`")
+                    await msg.edit(f"`file size is 0B..`\n– `{files}`")
                     await asyncio.sleep(6)
                     continue
                 attributes = None

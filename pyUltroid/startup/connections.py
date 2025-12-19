@@ -124,14 +124,17 @@ def connect_ub(s):
 def init_session(udB, ub=False, asst=False):
     key = udB.get_key("_PREFER_ASYNC_SQLITE")
     if ub:
-        return (
-            AsyncSQLite(key)
-            if key and AsyncSQLite and HOSTED_ON == "termux"
-            else validate_session(Var.SESSION, LOGS)
-        )
+        if key and AsyncSQLite and HOSTED_ON == "termux":
+            from pyUltroid.custom.init import loop
+
+            session = AsyncSQLite(key)
+            loop.run_until_complete(session._initiate())
+        else:
+            return validate_session(Var.SESSION, LOGS)
     elif asst:
-        return (
-            AsyncSQLite("asst")
-            if key and AsyncSQLite and HOSTED_ON == "termux"
-            else None
-        )
+        if key and AsyncSQLite and HOSTED_ON == "termux":
+            from pyUltroid.custom.init import loop
+
+            session = AsyncSQLite("asst")
+            loop.run_until_complete(session._initiate())
+            return session

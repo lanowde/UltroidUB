@@ -1,2 +1,2 @@
-__version__ = "2025.11.24"
+__version__ = "2025.12.19"
 ultroid_version = "2.1"
