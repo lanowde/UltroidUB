@@ -28,11 +28,6 @@ from pyUltroid.custom.commons import (
 )
 from .helper import download_file
 
-try:
-    from youtubesearchpython.__future__ import Playlist, VideosSearch
-except ImportError:
-    Playlist, VideosSearch = None, None
-
 
 ytdl_logger = logging.getLogger("yt-dlp")
 
@@ -88,13 +83,17 @@ def ytdl_progress(event, k):
         LOGS.exception(exc)
 
 
-async def get_yt_link(query):
-    obj = VideosSearch(query, limit=1)
-    search = await obj.next()
+@run_async
+def get_yt_link(query):
+    ydl_opts = _ytdl_options()
+    ydl_opts |= {"default_search": "ytsearch1", "skip_download": True}
     try:
-        return search["result"][0]["link"]
-    except (IndexError, KeyError):
-        return
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(query, download=False)
+            if "entries" in info and info["entries"]:
+                return info["entries"][0].get("webpage_url")
+    except Exception as exc:
+        LOGS.exception(f"Error in obtaining yt link: {exc}")
 
 
 @run_async
@@ -109,7 +108,8 @@ def ytdownload(url, opts, event):
 
 @run_async
 def extract_info(url):
-    return YoutubeDL(_ytdl_options()).extract_info(url=url, download=False)
+    ydl_opts = _ytdl_options() | {"extract_flat": True}
+    return YoutubeDL(ydl_options).extract_info(url=url, download=False)
 
 
 # ---------------YouTube Downloader Inline---------------
@@ -183,17 +183,17 @@ async def dler(event, url, **opts):
     return (re_code, folder)
 
 
-async def get_videos_link(url):
+# obtain video links from playlist.
+@run_async
+def get_videos_link(url):
     to_return = []
-    regex = re.search(r"\?list=([(\w+)\-]*)", url)
-    if not regex:
-        return to_return
-    playlist_id = regex.group(1)
-    videos = Playlist(playlist_id)
-    while video.hasMoreVideos:
-        vid = await videos.getNextVideos()
-        link = re.search(r"\?v=([(\w+)\-]*)", vid["link"]).group(1)
-        to_return.append(f"https://youtube.com/watch?v={link}")
+
+    ydl_opts = _ytdl_options() | {"extract_flat": True}
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        if "entries" in info:
+            for entry in info["entries"]:
+                to_return.append(entry["url"])
 
     return to_return
 

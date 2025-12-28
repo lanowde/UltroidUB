@@ -35,7 +35,6 @@ tabulate
 telegraph
 twikit
 tgcrypto
-youtube-search-python
 yt-dlp
 
 # addons
