@@ -85,6 +85,7 @@ def ytdl_progress(event, k):
 
 @run_async
 def get_yt_link(query):
+    """Get Single yt vid link from a search query."""
     ydl_opts = _ytdl_options()
     ydl_opts |= {"default_search": "ytsearch1", "skip_download": True}
     try:
@@ -94,6 +95,20 @@ def get_yt_link(query):
                 return info["entries"][0].get("webpage_url")
     except Exception as exc:
         LOGS.exception(f"Error in obtaining yt link: {exc}")
+
+
+@run_async
+def yt_searcher(query, limit=25):
+    """Search videos on YT and return all information"""
+    ydl_opts = _ytdl_options()
+    ydl_opts |= {"default_search": f"ytsearch{limit}", "skip_download": True}
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(query, download=False)
+            if "entries" in info and info["entries"]:
+                return info["entries"]
+    except Exception as exc:
+        LOGS.exception(f"Error in searching on yt: {exc}")
 
 
 @run_async
@@ -108,6 +123,7 @@ def ytdownload(url, opts, event):
 
 @run_async
 def extract_info(url):
+    """Get information about video using its link."""
     ydl_opts = _ytdl_options() | {"extract_flat": True}
     return YoutubeDL(ydl_options).extract_info(url=url, download=False)
 
@@ -183,9 +199,9 @@ async def dler(event, url, **opts):
     return (re_code, folder)
 
 
-# obtain video links from playlist.
 @run_async
 def get_videos_link(url):
+    """Get individual videos link from a playlist link"""
     to_return = []
 
     ydl_opts = _ytdl_options() | {"extract_flat": True}
@@ -327,6 +343,7 @@ __all__ = (
     "get_formats",
     "get_videos_link",
     "get_yt_link",
+    "yt_searcher",
     "ytdl_progress",
     "ytdownload",
 )

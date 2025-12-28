@@ -10,13 +10,14 @@ import os
 import re
 import time
 from pathlib import Path
+from datetime import datetime
 
 from telethon import Button
 from telethon.tl.types import InputWebDocument
 
 from pyUltroid.fns.helper import download_file, numerize
 from pyUltroid.custom._transfer import pyroUL
-from pyUltroid.fns.ytdl import extract_info, dler, get_buttons, get_formats
+from pyUltroid.fns.ytdl import extract_info, dler, get_buttons, get_formats, yt_searcher
 from pyUltroid.custom.commons import (
     bash,
     check_filename,
@@ -31,12 +32,6 @@ try:
     from PIL import Image
 except ImportError:
     Image = None
-
-try:
-    from youtubesearchpython.__future__ import VideosSearch
-except ImportError:
-    LOGS.info("'youtubesearchpython' is not installed. Some plugins will not work!")
-    VideosSearch = None
 
 
 ytt = "https://graph.org/file/afd04510c13914a06dd03.jpg"
@@ -62,23 +57,20 @@ async def inline_yt(event):
         return await event.answer([fuk])
 
     results = []
-    obj = VideosSearch(string, limit=30)
-    nub = await obj.next()
-    for v in nub["result"]:
+    result = await yt_searcher(string, limit=30) or []
+    for v in result:
         ids = v["id"]
-        link = _yt_base_url + ids
+        link = v["webpage_url"]
         title = v["title"]
-        duration = v["duration"]
-        views = v["viewCount"]["short"]
-        publisher = v["channel"]["name"]
-        published_on = v["publishedTime"]
-        description = (
-            v["descriptionSnippet"][0]["text"]
-            if v.get("descriptionSnippet")
-            and len(v["descriptionSnippet"][0]["text"]) < 500
-            else "None"
-        )
-        thumb = f"https://i.ytimg.com/vi/{ids}/hqdefault.jpg"
+        duration = time_formatter(v["duration"] * 1000)
+        views = numerize(v["view_count"]) or 0
+        publisher = v["channel"]
+        tstamp = v["timestamp"]
+        local_dt = datetime.fromtimestamp(tstamp)
+        published_on = local_dt.strftime("%I:%M, %d-%m-%Y")
+        description = v["description"][:300]
+        thumb = v["thumbnail"]
+
         text = f"**Title: [{title}]({link})**\n\n"
         text += f"`Description: {description}...\n\n"
         text += f"「 Duration: {duration} 」\n"
@@ -298,14 +290,12 @@ async def inline_ytdownload(event):
             f"resources/temp/{title}.jpg",
         )
 
-        """
         try:
             if Image:
                 Image.open(thumb).save(thumb, "JPEG")
         except Exception as er:
             LOGS.exception("YTDL Error in saving thumbnail..")
             thumb = None
-        """
 
         if ytdl_data.get("artist"):
             artist = ytdl_data["artist"]
