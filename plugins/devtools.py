@@ -361,7 +361,7 @@ async def run_eval(event):
         # value = await aexec(cmd, event)
         process_id = f"{event.chat_id}_" + f"{xx.id}" if xx else random_string(12)
         tima = time.perf_counter()
-        task = asyncio.create_task(AsyncExecHelper(cmd, event).run())
+        task = asyncio.create_task(AsyncExecHelper(cmd, event).run(), name=process_id)
         # we must keep a reference of the asyncio Task
         _EVAL_TASKS[process_id] = task
         task.add_done_callback(lambda _: _EVAL_TASKS.pop(process_id, None))
