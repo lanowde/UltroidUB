@@ -74,8 +74,9 @@ async def ac(e):
         asst.add_handler(
             astcmds,
             events.NewMessage(
-                func=lambda x: x.text.startswith("/")
-                and x.text[1:] in list(list_cmds())
+                func=lambda x: (
+                    x.text.startswith("/") and x.text[1:] in list(list_cmds())
+                )
             ),
         )
     await e.eor(get_string("asstcmd_4").format(wrd))

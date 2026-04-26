@@ -54,8 +54,7 @@ wikipedia
 cloudscraper  # for sticker search
 
 # custom
-# https://github.com/PyrogramMod/PyrogramMod/archive/refs/heads/main.zip
-https://github.com/KurimuzonAkuma/pyrogram/archive/dev.zip
+kurigram
 pymediainfo
 aiofiles
 isal  # fast gzip for telethon

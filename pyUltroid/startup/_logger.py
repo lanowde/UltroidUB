@@ -52,7 +52,9 @@ def where_hosted():
 
 HOSTED_ON = where_hosted()
 
+
 # ----------------------------------------------------------------------------
+
 
 if int(python_version_tuple()[1]) < 10:
     _fix_logging(logging.FileHandler)
@@ -64,6 +66,7 @@ if data := environ.get("LOGGER_DATA"):
     LOG_DATA = literal_eval(data)
     if Var.HOST.lower() == "heroku":
         environ.pop("LOGGER_DATA", None)
+
 
 # ----------------------------------------------------------------------------
 

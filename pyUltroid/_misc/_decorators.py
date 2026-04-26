@@ -107,8 +107,8 @@ def ultroid_cmd(
     fullsudo = kwargs.get("fullsudo", False)
     only_devs = kwargs.get("only_devs", False)
 
-    incoming_func = lambda e: not (
-        (e.media and not isinstance(e.media, MessageMediaWebPage)) or e.via_bot_id
+    incoming_func = lambda e: (
+        not ((e.media and not isinstance(e.media, MessageMediaWebPage)) or e.via_bot_id)
     )
 
     func = kwargs.get("func", incoming_func)
@@ -297,10 +297,13 @@ def ultroid_cmd(
         # ignore edits that are -
         #  - triggered by reaction,
         #  - or message is older than 30 minutes.
-        edit_func = lambda e: incoming_func(e) and not (
-            (e.is_channel and e.chat.broadcast)
-            or getattr(e.message, "edit_hide", None)
-            or (e.message.edit_date - e.message.date).seconds > 1800
+        edit_func = lambda e: (
+            incoming_func(e)
+            and not (
+                (e.is_channel and e.chat.broadcast)
+                or getattr(e.message, "edit_hide", None)
+                or (e.message.edit_date - e.message.date).seconds > 1800
+            )
         )
 
         # edited message handler for sudo users
