@@ -11,6 +11,7 @@ import base64
 import ipaddress
 import struct
 import sys
+from os import getenv
 
 from telethon.errors.rpcerrorlist import AuthKeyDuplicatedError
 from telethon.sessions.string import _STRUCT_PREFORMAT, CURRENT_VERSION, StringSession
@@ -124,15 +125,17 @@ def connect_ub(s):
 def init_session(udB, ub=False, asst=False):
     key = udB.get_key("_PREFER_ASYNC_SQLITE")
     if ub:
-        if key and AsyncSQLite and HOSTED_ON == "termux":
+        if key and AsyncSQLite and getenv("IS_TERMUX"):
             from pyUltroid.custom.init import loop
 
             session = AsyncSQLite(key)
             loop.run_until_complete(session._initiate())
+            return session
         else:
             return validate_session(Var.SESSION, LOGS)
+
     elif asst:
-        if key and AsyncSQLite and HOSTED_ON == "termux":
+        if key and AsyncSQLite and getenv("IS_TERMUX"):
             from pyUltroid.custom.init import loop
 
             session = AsyncSQLite("asst")
