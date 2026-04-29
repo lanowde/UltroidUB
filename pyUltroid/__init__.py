@@ -75,7 +75,6 @@ else:
         app_version=ultroid_version,
         device_model="Ultroid",
         proxy=udB.get_key("TG_PROXY"),
-        entity_cache_limit=25000,
     )
     ultroid_bot.run_in_loop(_autobot(ultroid_bot, udB))
 
@@ -87,7 +86,6 @@ else:
         _session,
         bot_token=udB.get_key("BOT_TOKEN") or Var.BOT_TOKEN,
         udB=udB,
-        entity_cache_limit=25000,
     )
 
 if BOT_MODE:

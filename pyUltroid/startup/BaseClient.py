@@ -11,6 +11,7 @@ import inspect
 import sys
 import time
 from logging import Logger
+from os import getenv
 from pathlib import Path
 
 from telethon import TelegramClient
@@ -55,6 +56,16 @@ class UltroidClient(TelegramClient):
         kwargs["api_id"] = api_id or Var.API_ID
         kwargs["api_hash"] = api_hash or Var.API_HASH
         kwargs["base_logger"] = TelethonLogger
+        if getenv("IS_TERMUX"):
+            # few specific settings for local host
+            # especially on a slow connection.
+            kwargs["entity_cache_limit"] = 20000
+            kwargs["use_ipv6"] = True  # testing
+            kwargs["flood_sleep_threshold"] = 150
+            kwargs["timeout"] = 15
+            kwargs["retry_delay"] = 8
+            kwargs["connection_retries"] = 25
+            kwargs["request_retries"] = 12
 
         super().__init__(session, **kwargs)
         self.run_in_loop(self.start_client(bot_token=bot_token))
