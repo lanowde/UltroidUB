@@ -42,6 +42,8 @@ else:
 
 
 _EVAL_TASKS = {}
+TEXT_CLEANUP = lambda t: t.replace(chr(160), " ")
+PY_VERSION = sys.version_info
 
 
 @ultroid_cmd(
@@ -52,6 +54,7 @@ async def neo_fetch(e):
     x, y = await bash("neofetch|sed 's/\x1b\\[[0-9;\\?]*[a-zA-Z]//g' >> neo.txt")
     if y and y.endswith("NOT_FOUND"):
         return await xx.edit(f"Error: `{y}`")
+
     np = await asyncread("neo.txt")
     color = await _get_colors(pick=True)
     p = np.replace("\n\n", "")
@@ -145,13 +148,14 @@ async def run_bash(event):
 
     if not nolog:
         LOGS.debug(cmd)
+
     edit_text = get_string("com_1") + (
         "" if not event.client.me.premium else " [😐](emoji/5386367538735104399)"
     )
     xx = await event.eor(edit_text)
 
     d_time = time.perf_counter()
-    stdout, stderr = await bash(cmd)
+    stdout, stderr = await bash(TEXT_CLEANUP(cmd))
     d_time = (time.perf_counter() - d_time) * 1000
 
     if stdout and (carb or rayso):
@@ -283,7 +287,7 @@ def _parse_eval(value=None):
 async def run_eval(event):
     cmd = event.pattern_match.group(2)
     if not cmd:
-        return await event.eor(get_string("devs_2"), time=5)
+        return await event.eor(get_string("devs_2"), time=8)
 
     xx, mode = None, ""
     spli = cmd.split(maxsplit=1)
@@ -294,6 +298,7 @@ async def run_eval(event):
         except IndexError:
             await event.eor("->> Wrong Format <<-")
             cm = None
+
         return cm
 
     edit_text = get_string("com_1") + (
@@ -322,7 +327,7 @@ async def run_eval(event):
         cmd = await get_()
 
     if not cmd:
-        return
+        return await event.eor(get_string("devs_2"), time=8)
 
     if mode != "silent" and not xx:
         xx = await event.eor(edit_text)
@@ -334,7 +339,7 @@ async def run_eval(event):
 
             cmd = black.format_str(cmd, mode=black.Mode())
         except (ImportError, Exception):
-            pass
+            LOGS.error("Install Black to use this feature!")
 
     if (
         KEEP_SAFE
@@ -361,7 +366,10 @@ async def run_eval(event):
         # value = await aexec(cmd, event)
         process_id = f"{event.chat_id}_" + f"{xx.id}" if xx else random_string(12)
         tima = time.perf_counter()
-        task = asyncio.create_task(AsyncExecHelper(cmd, event).run(), name=process_id)
+        task = asyncio.create_task(
+            run_py_code(TEXT_CLEANUP(cmd), event),
+            name=process_id,
+        )
         # we must keep a reference of the asyncio Task
         _EVAL_TASKS[process_id] = task
         task.add_done_callback(lambda _: _EVAL_TASKS.pop(process_id, None))
@@ -545,35 +553,28 @@ def _stringify(text=None, *args, **kwargs):
     return print(text, *args, **kwargs)
 
 
-class AsyncExecHelper:
-    __slots__ = ("code", "event", "locals")
+async def run_py_code(code, event):
+    kwargs = {}
+    if PY_VERSION >= (3, 13):
+        _locals = locals()  # python 3.13+ locals() already returns a snapshot
+        kwargs = {"locals": _locals}
 
-    def __init__(self, code, event):
-        self.code = code
-        self.event = event
-
-    async def run(self):
-        kwargs = {}
-        if sys.version_info >= (3, 13):
-            self.locals = locals()  # python 3.13+ locals() already returns a snapshot
-            kwargs = {"locals": self.locals}
-
-        exec(
-            (
-                "async def __aexec(e, client): "
-                + "\n from builtins import print as ppp"
-                + "\n\n print = p = _stringify"
-                + "\n message = event = e"
-                + "\n reply = rm = await event.get_reply_message()"
-                + "\n chat = event.chat_id"
-                # + "\n u.lr = locals()"
-            )
-            + "".join(f"\n {l}" for l in self.code.split("\n")),
-            **kwargs,
+    exec(
+        (
+            "async def __aexec(e, client): "
+            + "\n from builtins import print as ppp"
+            + "\n\n print = p = _stringify"
+            + "\n message = event = e"
+            + "\n reply = rm = await event.get_reply_message()"
+            + "\n chat = event.chat_id"
+            # + "\n u.lr = locals()"
         )
+        + "".join(f"\n {l}" for l in code.split("\n")),
+        **kwargs,
+    )
 
-        _locals = self.locals if sys.version_info >= (3, 13) else locals()
-        return await _locals["__aexec"](self.event, self.event.client)
+    new_locals = _locals if PY_VERSION >= (3, 13) else locals()
+    return await new_locals["__aexec"](event, event.client)
 
 
 DUMMY_CPP = """#include <iostream>
