@@ -55,7 +55,7 @@ class GDriveManager:
 
     # hack for accessing multiple gdrive
     def _fix_keys(self, key):
-        return key + (self.key_suffix or "")
+        return key + "_" + (self.key_suffix or "")
 
     @staticmethod
     def extract_drive_id(link):
@@ -184,7 +184,6 @@ class GDriveManager:
 
         uploaded = 0
         response = None
-        last_txt = ""
         start = time.time()
         last_edit_time = start - 7
         async with aiofiles.open(path, mode="rb") as f:
@@ -215,16 +214,13 @@ class GDriveManager:
                     + f"**Speed:**  `{humanbytes(speed)}/s`\n"
                     + f"**ETA:**  `{time_formatter(eta)}`"
                 )
-                if last_txt != current_txt:
-                    await event.edit(current_txt)
-                    last_txt = current_txt
-                    last_edit_time = now
+                await event.edit(current_txt)
+                last_edit_time = now
             return await response.json()
 
     @check_access_token
     async def download_file(self, event, file_id: str):
         fileId = GDriveManager.extract_drive_id(file_id)
-        last_txt = ""
         headers = {
             "Authorization": "Bearer " + self.creds.get("access_token"),
             "Content-Type": "application/json",
@@ -280,9 +276,7 @@ class GDriveManager:
                         + f"**Speed:**  `{humanbytes(speed)}/s`\n"
                         + f"**ETA:**  `{time_formatter(eta)}`"
                     )
-                    if last_txt != current_txt:
-                        await event.edit(current_txt)
-                        last_txt = current_txt
-                        last_edit_time = now
+                    await event.edit(current_txt)
+                    last_edit_time = now
 
         return True, filename
