@@ -353,7 +353,7 @@ async def fast_download(download_url, filename=None, progress_callback=None):
         dl = await download_file(download_url, filename)
         return dl[0], time.time() - start_time
 
-    # without callback
+    # with callback
     async def _download(response):
         total_size = int(response.headers.get("content-length", 0)) or None
         downloaded_size = 0

@@ -15,6 +15,8 @@ import os
 import time
 from pathlib import Path
 
+import requests
+
 # from aiohttp.client_exceptions import InvalidURL
 from telethon.errors.rpcerrorlist import MessageNotModifiedError
 from telethon.tl.types import DocumentAttributeAudio, DocumentAttributeVideo
@@ -31,9 +33,12 @@ from . import (
     fast_download,
     gen_mediainfo,
     get_all_files,
+    get_filename_from_url,
     get_string,
     get_tg_filename,
+    humanbytes,
     progress,
+    run_async,
     string_is_url,
     time_formatter,
     tg_downloader,
@@ -69,7 +74,83 @@ async def downlomder(event):
         LOGS.exception(exc)
         return await msg.edit(f"**Error in URL download:** \n`{exc}`")
 
-    await msg.edit(f"Downloaded to `{filename}` \nin {time_formatter(d * 1000)}.")
+    await msg.edit(f"Downloaded in {time_formatter(d * 1000)}. \n\n- `{filename}`")
+
+
+_REQ_PROGRESS_BAR = {}
+
+
+@run_async
+def requests_downloader(url):
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()  # Raises an exception for HTTP errors
+    except Exception as exc:
+        LOGS.exception(exc)
+        return False, exc
+
+    if fn := response.headers.get("Content-Disposition"):
+        fn = filename.lsplit("filename=", 1)[1]
+        filename = fn.strip('"')
+    else:
+        filename = get_filename_from_url(url)
+
+    filename = check_filename(filename)
+    _REQ_PROGRESS_BAR.update({url: filename})
+    with open(filename, "wb") as f:
+        for chunk in response.iter_content(chunk_size=1024 * 1024):
+            if chunk:  # Filter out keep-alive chunks
+                f.write(chunk)
+
+    _REQ_PROGRESS_BAR.pop(url, None)
+    return True, filename
+
+
+async def requests_progress_func(event, url):
+    await asyncio.sleep(6)  # first run
+    while True:
+        if not (data := _REQ_PROGRESS_BAR.get(url)):
+            return
+        size = humanbytes(os.path.getsize(data))
+        await event.edit(
+            f"**Sync Downloading from URL:** `{url[:80]}`..\n\n- Downloaded: {size}."
+        )
+        await asyncio.sleep(8)
+
+
+# just a test
+@ultroid_cmd(
+    pattern="reqdl( (.*)|$)",
+)
+async def req_downloader(event):
+    link = event.pattern_match.group(2)
+    if not link:
+        return await event.eor(get_string("udl_5"), time=5)
+    if link in _REQ_PROGRESS_BAR:
+        return await event.eor("Already downloading this URL")
+
+    msg = await event.eor(get_string("udl_4"))
+    try:
+        _start = time.time()
+        _REQ_PROGRESS_BAR[link] = None
+        dls, _ = await asyncio.gather(
+            requests_downloader(link),
+            requests_progress_func(msg, link),
+        )
+    except Exception as exc:
+        LOGS.exception(exc)
+        return await msg.edit(f"**Error in URL download:** \n`{exc}`")
+    finally:
+        _REQ_PROGRESS_BAR.pop(link, None)
+
+    if dls[0]:
+        tt = time_formatter((time.time() - _start) * 1000)
+        await msg.edit(f"Downloaded in {tt}.\n\n- `{dls[1]}`")
+    else:
+        await msg.edit("Something went wrong while downloading the file..")
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 @ultroid_cmd(

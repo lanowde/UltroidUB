@@ -84,7 +84,7 @@ async def gdrive_uploader(event):
         m_time = time.time()
         resp = await GD.upload_file(mone, filename)
         await asyncio.sleep(1)
-        text = "**GDrive Upload was Successful!** \n\n**File Name:** `{name}` \n**Size:** `{size}` \n**GDrive Link:** [Click Here]({link}) \n**Time Taken:** `{time_taken}`"
+        text = "**GDrive Upload was Successful!** \n\n**File Name:** `{name}` \n**Size:** `{size}` \n**Link:** [Click Here]({link}) \n**Time Taken:** `{time_taken}`"
         await mone.edit(
             text.format(
                 name=resp.get("name"),
