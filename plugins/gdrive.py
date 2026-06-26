@@ -47,10 +47,8 @@ async def gdrive_uploader(event):
     inpt = event.pattern_match.group(2)
 
     if not (reply or inpt):
-        return await event.eor(
-            "`Reply to file or give its path to upload to Gdrive!`"
-        )
- 
+        return await event.eor("`Reply to file or give its path to upload to Gdrive!`")
+
     args = unix_parser(input_file or "")
     key_suffix = args.kwargs.get("k")
     filename = args.args
@@ -104,13 +102,21 @@ async def gdrive_uploader(event):
     pattern="gdown( (.*)|$)",
 )
 async def gdrive_downloader(e):
-    GD = GDriveManager()
     match = e.pattern_match.group(2)
     if not match:
         return await e.eor("`Give GDrive Link to Download from..`")
 
-    file_id = GD.extract_drive_id(match)
-    if not file_id:
+    args = unix_parser(match or "")
+    key_suffix = args.kwargs.get("k")
+    match = args.args
+
+    GD = GDriveManager(key_suffix)
+    if not GD.creds:
+        return await e.eor(
+            "`Credentials have not been added; add GDrive tokens to Use it..`"
+        )
+
+    if not GD.extract_drive_id(match):
         return await e.eor("`This link seems to be invalid GDrive url..`")
 
     eve = await e.eor(get_string("com_1"))
