@@ -16,15 +16,12 @@ from random import choice
 
 from bs4 import BeautifulSoup as bs
 
-try:
-    from pyUltroid.fns.gDrive import GDriveManager
-except ImportError:
-    GDriveManager = None
 
 from telethon import Button, events
 from telethon.tl.types import MessageMediaWebPage
 from telethon.utils import get_peer_id
 
+from pyUltroid.fns.gDrive import GDriveManager
 from pyUltroid.fns.helper import fast_download
 from pyUltroid.fns.tools import Carbon, get_paste
 from pyUltroid.custom.commons import async_searcher, osremove, progress
@@ -33,12 +30,6 @@ from pyUltroid.custom._extras import FixedSizeDict
 from pyUltroid.startup.loader import Loader
 
 from . import *
-
-
-# --------------------------------------------------------------------#
-
-
-GDrive = GDriveManager() if GDriveManager else None
 
 
 # --------------------------------------------------------------------#
@@ -241,9 +232,6 @@ _convo = {
 }
 
 
-TOKEN_FILE = "resources/auths/auth_token.txt"
-
-
 @callback(
     re.compile(
         "sndplug_(.*)",
@@ -420,12 +408,13 @@ async def convo_handler(event: events.CallbackQuery):
 async def _(e):
     if not e.is_private:
         return
-    url = GDrive._create_token_file()
+    GDrive = GDriveManager()
+    url = GDrive.get_access_token(code=None)
     await e.edit("Go to the below link and send the code!")
-    async with asst.conversation(e.sender_id) as conv:
+    async with asst.conversation(e.sender_id, timeout=30) as conv:
         await conv.send_message(url)
         code = await conv.get_response()
-        if GDrive._create_token_file(code=code.text):
+        if GDrive.get_access_token(code=code.text):
             await conv.send_message(
                 "`Success!\nYou are all set to use Google Drive with Ultroid Userbot.`",
                 buttons=Button.inline("Main Menu", data="setter"),

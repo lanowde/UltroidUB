@@ -7,237 +7,282 @@
 
 __all__ = ("GDriveManager",)
 
-import time
-from io import FileIO
-from logging import WARNING
-from mimetypes import guess_type
 
-from apiclient.http import LOGGER, MediaFileUpload, MediaIoBaseDownload
-from googleapiclient.discovery import build, logger
-from httplib2 import Http
-from oauth2client.client import OOB_CALLBACK_URN, OAuth2WebServerFlow
-from oauth2client.client import logger as _logger
-from oauth2client.file import Storage
+import json
+import os
+import time
+from functools import wraps
+from mimetypes import guess_type
+from urllib.parse import parse_qs, urlencode
+
+import aiofiles
+from aiohttp import ClientSession
 
 from pyUltroid import udB
-from pyUltroid.custom.commons import humanbytes, time_formatter
-
-
-for log in (LOGGER, logger, _logger):
-    log.setLevel(WARNING)
+from pyUltroid.custom.commons import (
+    check_filename,
+    humanbytes,
+    random_string,
+    time_formatter,
+)
 
 
 class GDriveManager:
-    def __init__(self):
-        self._flow = {}
-        self.gdrive_creds = {
-            "oauth_scope": [
-                "https://www.googleapis.com/auth/drive",
-                "https://www.googleapis.com/auth/drive.file",
-                "https://www.googleapis.com/auth/drive.metadata",
-            ],
-            "dir_mimetype": "application/vnd.google-apps.folder",
-            "redirect_uri": OOB_CALLBACK_URN,
-        }
-        self.auth_token = udB.get_key("GDRIVE_AUTH_TOKEN")
-        self.folder_id = udB.get_key("GDRIVE_FOLDER_ID")
-        self.token_file = "resources/auth/gdrive_creds.json"
+    __slots__ = (
+        "base_url",
+        "client_id",
+        "client_secret",
+        "folder_id",
+        "key_suffix",
+        "scope",
+        "creds",
+    )
+
+    def __init__(self, key_suffix=None):
+        self.key_suffix = key_suffix or ""
+        self.base_url = "https://www.googleapis.com/drive/v3"
+        self.client_id = (
+            udB.get_key(self._fix_keys("GDRIVE_CLIENT_ID"))
+            or "458306970678-jhfbv6o5sf1ar63o1ohp4c0grblp8qba.apps.googleusercontent.com"
+        )
+        self.client_secret = (
+            udB.get_key(self._fix_keys("GDRIVE_CLIENT_SECRET"))
+            or "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"
+        )
+        self.folder_id = udB.get_key(self._fix_keys("GDRIVE_FOLDER_ID")) or "root"
+        self.scope = "https://www.googleapis.com/auth/drive"
+        self.creds = udB.get_key(self._fix_keys("GDRIVE_AUTH_TOKEN")) or {}
+
+    # hack for accessing multiple gdrive
+    def _fix_keys(self, key):
+        return key + (self.key_suffix or "")
 
     @staticmethod
-    def _create_download_link(fileId: str):
-        return f"https://drive.google.com/uc?id={fileId}&export=download"
+    def extract_drive_id(link):
+        if "?id=" in link:
+            # https://drive.google.com/uc?id=1c7dE6hiYnTKlyBnWV4HrdGMkAhun_FZY&export=download
+            if file_id := parse_qs(link).get("id"):
+                return file_id[0]
+        elif "file/d/" in link:
+            # https://drive.google.com/file/d/1mFKVR1_eNOf279TD_KrAvkHOKPiOcW2Y/view?usp=drive_link
+            spl = link.lsplit("file/d/", maxsplit=1)[1]
+            return spl.lsplit("/", maxsplit=1)[0] if "/" in spl else spl
 
     @staticmethod
-    def _create_folder_link(folderId: str):
-        return f"https://drive.google.com/folderview?id={folderId}"
+    def upload_chunk_size(file_size):
+        if file_size < 8 * 1024 * 1024:
+            return 128 * 1024  # 128KB blocks
+        elif file_size < 128 * 1024 * 1024:
+            return 2 * 1024 * 1024  # 2MB blocks
+        else:
+            return 32 * 1024 * 1024  # 32MB blocks
 
-    def _create_token_file(self, code: str = None):
-        if code and self._flow:
-            _auth_flow = self._flow["_"]
-            credentials = _auth_flow.step2_exchange(code)
-            Storage(self.token_file).put(credentials)
-            return udB.set_key("GDRIVE_AUTH_TOKEN", str(open(self.token_file).read()))
-        try:
-            _auth_flow = OAuth2WebServerFlow(
-                udB.get_key("GDRIVE_CLIENT_ID")
-                or "458306970678-jhfbv6o5sf1ar63o1ohp4c0grblp8qba.apps.googleusercontent.com",
-                udB.get_key("GDRIVE_CLIENT_SECRET")
-                or "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",
-                self.gdrive_creds["oauth_scope"],
-                redirect_uri=self.gdrive_creds["redirect_uri"],
+    @staticmethod
+    def download_chunk_size(file_size):
+        if file_size == 1:  # server side mismatch
+            return 32 * 1024 * 1024  # use default blocks
+        elif file_size < 200 * 1024 * 1024:
+            return 8 * 1024 * 1024  # 8MB blocks
+        else:
+            return 32 * 1024 * 1024  # 32MB blocks
+
+    def check_access_token(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            if time.time() > self.creds.get("expires_in"):
+                await self.refresh_access_token()
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    def get_oauth2_url(self):
+        # this url returns one-time-usabe codes, like: 4/1AdkVLVne2..
+        return "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(
+            {
+                "client_id": self.client_id,
+                "redirect_uri": "http://localhost",
+                "response_type": "code",
+                "scope": self.scope,
+                "access_type": "offline",
+                "prompt": "consent",
+            }
+        )
+
+    async def get_access_token(self, code=None) -> dict | str:
+        if not code:
+            return self.get_oauth2_url()
+        if code.startswith("http://localhost"):
+            code = parse_qs(code.split("?")[1]).get("code")[0]
+        url = "https://oauth2.googleapis.com/token"
+        async with ClientSession() as client:
+            resp = await client.post(
+                url,
+                data={
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                    "redirect_uri": "http://localhost",
+                    "grant_type": "authorization_code",
+                    "code": code,
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            self._flow["_"] = _auth_flow
-        except KeyError:
-            return "Fill GDRIVE client credentials"
-        return _auth_flow.step1_get_authorize_url()
+            self.creds = await resp.json()
+        self.creds["expires_in"] = time.time() + 3590
+        udB.set_key(self._fix_keys("GDRIVE_AUTH_TOKEN"), self.creds)
+        return True
 
-    @property
-    def _http(self):
-        storage = Storage(self.token_file)
-        creds = storage.get()
-        http = Http()
-        http.redirect_codes = http.redirect_codes - {308}
-        creds.refresh(http)
-        return creds.authorize(http)
+    async def refresh_access_token(self) -> None:
+        async with ClientSession() as client:
+            resp = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                    "grant_type": "refresh_token",
+                    "refresh_token": self.creds.get("refresh_token"),
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            self.creds["access_token"] = (await resp.json())["access_token"]
+        self.creds["expires_in"] = time.time() + 3590
+        udB.set_key(self._fix_keys("GDRIVE_AUTH_TOKEN"), self.creds)
 
-    @property
-    def _build(self):
-        return build("drive", "v2", http=self._http, cache_discovery=False)
-
-    def _set_permissions(self, fileId: str):
-        _permissions = {
-            "role": "reader",
-            "type": "anyone",
-            "value": None,
-            "withLink": True,
-        }
-        self._build.permissions().insert(
-            fileId=fileId, body=_permissions, supportsAllDrives=True
-        ).execute(http=self._http)
-
-    async def _upload_file(
-        self, event, path: str, filename: str = None, folder_id: str = None
-    ):
-        last_txt, _count = "", 0
-        if not filename:
-            filename = path.split("/")[-1]
+    @check_access_token
+    async def upload_file(self, event, path: str, folder_id: str | bool = None):
         mime_type = guess_type(path)[0] or "application/octet-stream"
-        media_body = MediaFileUpload(path, mimetype=mime_type, resumable=True)
-        body = {
-            "title": filename,
-            "description": "Uploaded using Ultroid Userbot",
+        # upload with progress bar
+        filesize = os.path.getsize(path)
+        filename = os.path.basename(path)
+        chunksize = GDriveManager.upload_chunk_size(filesize)
+
+        # 1. Retrieve session for resumable upload.
+        headers = {
+            "Authorization": "Bearer " + self.creds.get("access_token"),
+            "Content-Type": "application/json",
+        }
+        params = {
+            "name": filename,
             "mimeType": mime_type,
+            "fields": "id, name, webContentLink",
+            "parents": [folder_id] if folder_id else [self.folder_id],
         }
-        if folder_id:
-            body["parents"] = [{"id": folder_id}]
-        elif self.folder_id:
-            body["parents"] = [{"id": self.folder_id}]
-        upload = self._build.files().insert(
-            body=body, media_body=media_body, supportsAllDrives=True
-        )
+        async with ClientSession() as client:
+            r = await client.post(
+                "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable",
+                headers=headers,
+                data=json.dumps(params),
+                params={"fields": "id, name, webContentLink"},
+            )
+            if r.status == 401:
+                await self.refresh_access_token()
+                return await self.upload_file(event, path, folder_id)
+            elif r.status == 403:
+                # upload to root and move
+                return await self.upload_file(event, path, "root")
+
+            upload_url = r.headers.get("Location")
+
+        uploaded = 0
+        response = None
+        last_txt = ""
         start = time.time()
-        _status = None
-        while not _status:
-            _progress, _status = upload.next_chunk(num_retries=3)
-            _count += 1
-            if _progress and _count % 2 == 0:
-                diff = time.time() - start
-                completed = _progress.resumable_progress
-                total_size = _progress.total_size
-                percentage = round((completed / total_size) * 100, 2)
-                speed = round(completed / diff, 2)
-                eta = round((total_size - completed) / speed, 2) * 1000
-                crnt_txt = (
-                    f"`Uploading {filename} to GDrive...\n\n"
-                    + f"Status: {humanbytes(completed)}/{humanbytes(total_size)} »» {percentage}%\n"
-                    + f"Speed: {humanbytes(speed)}/s\n"
-                    + f"ETA: {time_formatter(eta)}`"
-                )
-                if last_txt != crnt_txt:
-                    await event.edit(crnt_txt)
-                    last_txt = crnt_txt
-        fileId = _status.get("id")
-        try:
-            self._set_permissions(fileId=fileId)
-        except BaseException:
-            pass
-        _url = self._build.files().get(fileId=fileId, supportsAllDrives=True).execute()
-        return _url.get("webContentLink")
-
-    async def _download_file(self, event, fileId: str, filename: str = None):
-        last_txt, _count = "", 0
-        if fileId.startswith("http"):
-            if "=download" in fileId:
-                fileId = fileId.split("=")[1][:-7]
-            elif "/view" in fileId:
-                fileId = fileId.split("/")[::-1][1]
-        try:
-            if not filename:
-                filename = (
-                    self._build.files()
-                    .get(fileId=fileId, supportsAllDrives=True)
-                    .execute()["title"]
-                )
-            downloader = self._build.files().get_media(
-                fileId=fileId, supportsAllDrives=True
-            )
-        except Exception as ex:
-            return False, str(ex)
-        with FileIO(filename, "wb") as file:
-            start = time.time()
-            download = MediaIoBaseDownload(file, downloader)
-            _status = None
-            while not _status:
-                _progress, _status = download.next_chunk(num_retries=3)
-                _count += 1
-                if _progress and _count % 2 == 0:
-                    diff = time.time() - start
-                    completed = _progress.resumable_progress
-                    total_size = _progress.total_size
-                    percentage = round((completed / total_size) * 100, 2)
-                    speed = round(completed / diff, 2)
-                    eta = round((total_size - completed) / speed, 2) * 1000
-                    crnt_txt = (
-                        f"`Downloading {filename} from GDrive...\n\n"
-                        + f"Status: {humanbytes(completed)}/{humanbytes(total_size)} »» {percentage}%\n"
-                        + f"Speed: {humanbytes(speed)}/s\n"
-                        + f"ETA: {time_formatter(eta)}`"
+        last_edit_time = start - 7
+        async with aiofiles.open(path, mode="rb") as f:
+            while filesize != uploaded:
+                chunk_data = await f.read(chunksize)
+                headers = {
+                    "Content-Length": str(len(chunk_data)),
+                    "Content-Range": f"bytes {uploaded}-{uploaded + len(chunk_data) - 1}/{filesize}",
+                }
+                uploaded += len(chunk_data)
+                async with ClientSession() as client:
+                    response = await client.put(
+                        upload_url,
+                        data=chunk_data,
+                        headers=headers,
                     )
-                    if last_txt != crnt_txt:
-                        await event.edit(crnt_txt)
-                        last_txt = crnt_txt
-        return True, filename
 
-    @property
-    def _list_files(self):
-        _items = (
-            self._build.files()
-            .list(
-                supportsTeamDrives=True,
-                includeTeamDriveItems=True,
-                spaces="drive",
-                fields="nextPageToken, items(id, title, mimeType)",
-                pageToken=None,
-            )
-            .execute()
-        )
-        _files = {}
-        for files in _items["items"]:
-            if files["mimeType"] == self.gdrive_creds["dir_mimetype"]:
-                _files[self._create_folder_link(files["id"])] = files["title"]
-            else:
-                _files[self._create_download_link(files["id"])] = files["title"]
-        return _files
+                now = time.time()
+                if now - last_edit_time < 6:
+                    continue
+                diff = now - start
+                percentage = round((uploaded / filesize) * 100, 2)
+                speed = round(uploaded / diff, 2)
+                eta = round((filesize - uploaded) / speed, 2) * 1000
+                current_txt = (
+                    f"Uploading `{filename}` to **GDrive**...\n\n"
+                    + f"**Status:**  `{humanbytes(uploaded)}/{humanbytes(filesize)}` » `{percentage}%`\n"
+                    + f"**Speed:**  `{humanbytes(speed)}/s`\n"
+                    + f"**ETA:**  `{time_formatter(eta)}`"
+                )
+                if last_txt != current_txt:
+                    await event.edit(current_txt)
+                    last_txt = current_txt
+                    last_edit_time = now
+            return await response.json()
 
-    def create_directory(self, directory):
-        body = {
-            "title": directory,
-            "mimeType": self.gdrive_creds["dir_mimetype"],
+    @check_access_token
+    async def download_file(self, event, file_id: str):
+        fileId = GDriveManager.extract_drive_id(file_id)
+        last_txt = ""
+        headers = {
+            "Authorization": "Bearer " + self.creds.get("access_token"),
+            "Content-Type": "application/json",
         }
-        if self.folder_id:
-            body["parents"] = [{"id": self.folder_id}]
-        file = self._build.files().insert(body=body, supportsAllDrives=True).execute()
-        fileId = file.get("id")
-        self._set_permissions(fileId=fileId)
-        return fileId
-
-    def search(self, title):
-        query = f"title contains '{title}'"
-        if self.folder_id:
-            query = f"'{self.folder_id}' in parents and (title contains '{title}')"
-        _items = (
-            self._build.files()
-            .list(
-                supportsTeamDrives=True,
-                includeTeamDriveItems=True,
-                q=query,
-                spaces="drive",
-                fields="nextPageToken, items(id, title, mimeType)",
-                pageToken=None,
+        params = {
+            "supportsAllDrives": "true",
+            "includeItemsFromAllDrives": "true",
+            "fields": "id, name, mimeType, size",
+            "parents": [self.folder_id],
+        }
+        async with ClientSession() as client:
+            r = await client.get(
+                self.base_url + f"/files/{fileId}",
+                headers=headers,
+                params=params,
             )
-            .execute()
-        )
-        _files = {}
-        for files in _items["items"]:
-            _files[self._create_download_link(files["id"])] = files["title"]
-        return _files
+            if r.status != 200:
+                try:
+                    js = await r.json()
+                except Exception:
+                    js = await r.text()
+                return False, js
+
+            resp = await r.json()
+
+        filename = resp.get("name", random_string(12))
+        filename = check_filename(f"resources/downloads/{filename}")
+        filesize = int(resp.get("size", 1))
+        downloaded = 0
+        start = time.time()
+        last_edit_time = start - 7
+        chunksize = GDriveManager.download_chunk_size(filesize)
+        async with aiofiles.open(filename, "wb") as f:
+            async with ClientSession() as client:
+                resp1 = await client.get(
+                    self.base_url + f"/files/{fileId}",
+                    headers=headers,
+                    params={"alt": "media", **params},
+                    timeout=None,
+                )
+                async for chunk in resp1.content.iter_chunked(chunksize):
+                    downloaded += await f.write(chunk)
+                    now = time.time()
+                    if now - last_edit_time < 6.5:
+                        continue
+                    diff = now - start
+                    percentage = round((downloaded / filesize) * 100, 2)
+                    speed = round(downloaded / diff, 2)
+                    eta = round((filesize - downloaded) / speed, 2) * 1000
+                    current_txt = (
+                        f"Downloading `{filename}` from GDrive...\n\n"
+                        + f"**Status:**  `{humanbytes(downloaded)}/{humanbytes(filesize)}` » `{percentage}%`\n"
+                        + f"**Speed:**  `{humanbytes(speed)}/s`\n"
+                        + f"**ETA:**  `{time_formatter(eta)}`"
+                    )
+                    if last_txt != current_txt:
+                        await event.edit(current_txt)
+                        last_txt = current_txt
+                        last_edit_time = now
+
+        return True, filename
