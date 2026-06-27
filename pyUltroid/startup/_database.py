@@ -130,7 +130,7 @@ class MongoExtras:
 
     def get(self, clus, key):
         if x := self.db[clus][key].find_one({"_id": key}):
-            return x["value"]
+            return _evaluate(x["value"])
 
     def set(self, clus, key, value):
         if key in self.keys(clus):
