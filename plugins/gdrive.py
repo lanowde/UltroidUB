@@ -11,26 +11,25 @@
 • `{i}gdown <gdrive url>`
 
 • `{i}gup <reply to file/path>`
-  Flags: (k) to use other account!
-  Eg: `{i}gup -k=2` to use 2nd GDrive account.
 
 •• Required KEYS for gdrive uploader:
 - `GDRIVE_CLIENT_ID`
 - `GDRIVE_CLIENT_SECRET`
 - `GDRIVE_FOLDER_ID`  <optional>
-- `GDRIVE_CLIENT_ID_2`  <for 2nd account>
 
 •• You also need to Authorise GDrive once from /start menu of Assistant, which automatically sets `GDRIVE_AUTH_TOKEN` !
 """
 
 import asyncio
 import os
+import time
 
 from pyUltroid.fns.gDrive import GDriveManager
 
 from . import (
     LOGS,
     get_string,
+    humanbytes,
     tg_downloader,
     time_formatter,
     udB,
@@ -45,18 +44,20 @@ from . import (
 async def gdrive_uploader(event):
     reply = await event.get_reply_message()
     inpt = event.pattern_match.group(2)
+    custom_db_key = None
 
     if not (reply or inpt):
         return await event.eor("`Reply to file or give its path to upload to Gdrive!`")
 
-    args = unix_parser(input_file or "")
-    key_suffix = args.kwargs.get("k")
+    args = unix_parser(inpt or "")
     filename = args.args
+    if key_suffix := args.kwargs.get("k"):
+        custom_db_key = f"GDRIVE_CREDS_{key_suffix}"
 
-    GD = GDriveManager(key_suffix)
-    if not GD.creds:
+    GD = GDriveManager(custom_db_key)
+    if not GD.auth_token:
         return await event.eor(
-            "`Credentials have not been added; add GDrive tokens to Use it..`"
+            "`Credentials have not been added; please add GDrive tokens to Use this feature..`"
         )
 
     mone = await event.eor(get_string("com_1"))
@@ -73,7 +74,7 @@ async def gdrive_uploader(event):
 
         tt = time_formatter(t_time * 1000)
         await mone.edit(f"Downloaded in {tt}.\n – `{filename}`\n")
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
 
     if not (os.path.isfile(filename) and os.path.getsize(filename) != 0):
         return await mone.eor(
@@ -103,17 +104,19 @@ async def gdrive_uploader(event):
 )
 async def gdrive_downloader(e):
     match = e.pattern_match.group(2)
+    custom_db_key = None
     if not match:
         return await e.eor("`Give GDrive Link to Download from..`")
 
     args = unix_parser(match or "")
-    key_suffix = args.kwargs.get("k")
     match = args.args
+    if key_suffix := args.kwargs.get("k"):
+        custom_db_key = f"GDRIVE_CREDS_{key_suffix}"
 
-    GD = GDriveManager(key_suffix)
-    if not GD.creds:
+    GD = GDriveManager(custom_db_key)
+    if not GD.auth_token:
         return await e.eor(
-            "`Credentials have not been added; add GDrive tokens to Use it..`"
+            "`Credentials have not been added; please add GDrive tokens to Use this feature..`"
         )
 
     if not GD.extract_drive_id(match):

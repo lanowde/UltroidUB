@@ -13,7 +13,7 @@ import os
 import time
 from functools import wraps
 from mimetypes import guess_type
-from urllib.parse import parse_qs, urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import aiofiles
 from aiohttp import ClientSession
@@ -29,44 +29,55 @@ from pyUltroid.custom.commons import (
 
 class GDriveManager:
     __slots__ = (
+        "auth_token",
         "base_url",
         "client_id",
         "client_secret",
+        "custom_db_key",
         "folder_id",
         "key_suffix",
         "scope",
-        "creds",
     )
 
-    def __init__(self, key_suffix=None):
-        self.key_suffix = key_suffix or ""
+    def __init__(self, custom_db_key=None):
+        self.custom_db_key = custom_db_key  # based on mongo
         self.base_url = "https://www.googleapis.com/drive/v3"
-        self.client_id = (
-            udB.get_key(self._fix_keys("GDRIVE_CLIENT_ID"))
-            or "458306970678-jhfbv6o5sf1ar63o1ohp4c0grblp8qba.apps.googleusercontent.com"
-        )
-        self.client_secret = (
-            udB.get_key(self._fix_keys("GDRIVE_CLIENT_SECRET"))
-            or "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"
-        )
-        self.folder_id = udB.get_key(self._fix_keys("GDRIVE_FOLDER_ID")) or "root"
         self.scope = "https://www.googleapis.com/auth/drive"
-        self.creds = udB.get_key(self._fix_keys("GDRIVE_AUTH_TOKEN")) or {}
+        if not self.custom_db_key:
+            self.client_id = (
+                udB.get_key("GDRIVE_CLIENT_ID")
+                or "458306970678-jhfbv6o5sf1ar63o1ohp4c0grblp8qba.apps.googleusercontent.com"
+            )
+            self.client_secret = (
+                udB.get_key("GDRIVE_CLIENT_SECRET")
+                or "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"
+            )
+            self.folder_id = udB.get_key("GDRIVE_FOLDER_ID") or "root"
+            self.auth_token = udB.get_key("GDRIVE_AUTH_TOKEN") or {}
+        else:
+            self.custom_credentials(action="sync")
 
-    # hack for accessing multiple gdrive
-    def _fix_keys(self, key):
-        return key + "_" + (self.key_suffix or "")
+    def custom_credentials(self, action):
+        keys = ("client_id", "client_secret", "folder_id", "auth_token")
+        if action == "sync":
+            data = udB.mongo.get("commons", self.custom_db_key)
+            for i in keys:
+                setattr(self, i, data.get(i))
+        elif action == "update":
+            data = {i: getattr(self, i, None) for i in keys}
+            udB.mongo.set("commons", self.custom_db_key, data)
 
     @staticmethod
     def extract_drive_id(link):
         if "?id=" in link:
             # https://drive.google.com/uc?id=1c7dE6hiYnTKlyBnWV4HrdGMkAhun_FZY&export=download
-            if file_id := parse_qs(link).get("id"):
+            parsed = urlparse(link).query
+            if file_id := parse_qs(parsed).get("id"):
                 return file_id[0]
         elif "file/d/" in link:
             # https://drive.google.com/file/d/1mFKVR1_eNOf279TD_KrAvkHOKPiOcW2Y/view?usp=drive_link
-            spl = link.lsplit("file/d/", maxsplit=1)[1]
-            return spl.lsplit("/", maxsplit=1)[0] if "/" in spl else spl
+            spl = link.split("file/d/", maxsplit=1)[1]
+            return spl.split("/", maxsplit=1)[0] if "/" in spl else spl
 
     @staticmethod
     def upload_chunk_size(file_size):
@@ -88,15 +99,15 @@ class GDriveManager:
 
     def check_access_token(func):
         @wraps(func)
-        async def wrapper(*args, **kwargs):
-            if time.time() > self.creds.get("expires_in"):
+        async def wrapper(self, *args, **kwargs):
+            if time.time() > self.auth_token.get("expires_in"):
                 await self.refresh_access_token()
-            return await func(*args, **kwargs)
+            return await func(self, *args, **kwargs)
 
         return wrapper
 
     def get_oauth2_url(self):
-        # this url returns one-time-usabe codes, like: 4/1AdkVLVne2..
+        # url returns one-time-usable codes, like: 4/1AdkVLVne2..
         return "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode(
             {
                 "client_id": self.client_id,
@@ -126,9 +137,12 @@ class GDriveManager:
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            self.creds = await resp.json()
-        self.creds["expires_in"] = time.time() + 3590
-        udB.set_key(self._fix_keys("GDRIVE_AUTH_TOKEN"), self.creds)
+            self.auth_token = await resp.json()
+        self.auth_token["expires_in"] = time.time() + 3590
+        if self.custom_db_key:
+            self.custom_credentials(action="update")
+        else:
+            udB.set_key("GDRIVE_AUTH_TOKEN", self.auth_token)
         return True
 
     async def refresh_access_token(self) -> None:
@@ -139,13 +153,16 @@ class GDriveManager:
                     "client_id": self.client_id,
                     "client_secret": self.client_secret,
                     "grant_type": "refresh_token",
-                    "refresh_token": self.creds.get("refresh_token"),
+                    "refresh_token": self.auth_token.get("refresh_token"),
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            self.creds["access_token"] = (await resp.json())["access_token"]
-        self.creds["expires_in"] = time.time() + 3590
-        udB.set_key(self._fix_keys("GDRIVE_AUTH_TOKEN"), self.creds)
+            self.auth_token["access_token"] = (await resp.json())["access_token"]
+        self.auth_token["expires_in"] = time.time() + 3590
+        if self.custom_db_key:
+            self.custom_credentials(action="update")
+        else:
+            udB.set_key("GDRIVE_AUTH_TOKEN", self.auth_token)
 
     @check_access_token
     async def upload_file(self, event, path: str, folder_id: str | bool = None):
@@ -157,7 +174,7 @@ class GDriveManager:
 
         # 1. Retrieve session for resumable upload.
         headers = {
-            "Authorization": "Bearer " + self.creds.get("access_token"),
+            "Authorization": "Bearer " + self.auth_token.get("access_token"),
             "Content-Type": "application/json",
         }
         params = {
@@ -177,9 +194,8 @@ class GDriveManager:
                 await self.refresh_access_token()
                 return await self.upload_file(event, path, folder_id)
             elif r.status == 403:
-                # upload to root and move
+                # upload to root
                 return await self.upload_file(event, path, "root")
-
             upload_url = r.headers.get("Location")
 
         uploaded = 0
@@ -222,7 +238,7 @@ class GDriveManager:
     async def download_file(self, event, file_id: str):
         fileId = GDriveManager.extract_drive_id(file_id)
         headers = {
-            "Authorization": "Bearer " + self.creds.get("access_token"),
+            "Authorization": "Bearer " + self.auth_token.get("access_token"),
             "Content-Type": "application/json",
         }
         params = {
@@ -264,7 +280,7 @@ class GDriveManager:
                 async for chunk in resp1.content.iter_chunked(chunksize):
                     downloaded += await f.write(chunk)
                     now = time.time()
-                    if now - last_edit_time < 6.5:
+                    if now - last_edit_time < 6:
                         continue
                     diff = now - start
                     percentage = round((downloaded / filesize) * 100, 2)

@@ -16,8 +16,6 @@ import time
 from pathlib import Path
 
 import requests
-
-# from aiohttp.client_exceptions import InvalidURL
 from telethon.errors.rpcerrorlist import MessageNotModifiedError
 from telethon.tl.types import DocumentAttributeAudio, DocumentAttributeVideo
 
@@ -89,11 +87,14 @@ def requests_downloader(url):
         LOGS.exception(exc)
         return False, exc
 
-    if fn := response.headers.get("Content-Disposition"):
-        fn = filename.lsplit("filename=", 1)[1]
-        filename = fn.strip('"')
-    else:
-        filename = get_filename_from_url(url)
+    filename = get_filename_from_url(url)
+    fn = response.headers.get("Content-Disposition")
+    if fn and "filename=" in fn:
+        try:
+            fn = fn.split("filename=", 1)[1]
+            filename = fn.strip('"')
+        except IndexError:
+            pass
 
     filename = check_filename(filename)
     _REQ_PROGRESS_BAR.update({url: filename})

@@ -409,12 +409,12 @@ async def _(e):
     if not e.is_private:
         return
     GDrive = GDriveManager()
-    url = GDrive.get_access_token(code=None)
+    url = await GDrive.get_access_token(code=None)
     await e.edit("Go to the below link and send the code!")
     async with asst.conversation(e.sender_id, timeout=30) as conv:
         await conv.send_message(url)
         code = await conv.get_response()
-        if GDrive.get_access_token(code=code.text):
+        if await GDrive.get_access_token(code=code.text):
             await conv.send_message(
                 "`Success!\nYou are all set to use Google Drive with Ultroid Userbot.`",
                 buttons=Button.inline("Main Menu", data="setter"),
