@@ -17,12 +17,10 @@ bs4
 enhancer>=0.3.4
 git+https://github.com/buddhhu/img2html.git@c44170d#egg=img2html
 heroku3
-google-api-python-client
 htmlwebshot
 lottie
 lxml
 numpy
-oauth2client
 opencv-python-headless
 pillow
 profanitydetector
@@ -46,7 +44,6 @@ git+https://github.com/New-dev0/AsyncLyricsExtractor.git
 pygments  # ncode
 pyjokes
 quotefancy
-shazamio
 speechrecognition  # stt
 speedtest-cli
 textblob  # spellcheck
